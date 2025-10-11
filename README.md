@@ -3,6 +3,7 @@
 A platform-agnostic line editor library for Rust with full editing capabilities, command history, and cross-platform terminal support.
 
 [![Crates.io](https://img.shields.io/crates/v/editline.svg)](https://crates.io/crates/editline)
+[![Documentation](https://docs.rs/editline/badge.svg)](https://docs.rs/editline)
 [![License](https://img.shields.io/badge/license-MIT%2FUnlicense-blue.svg)](LICENSE)
 
 ## Overview
