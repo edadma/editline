@@ -2,6 +2,7 @@
 name = "editline"
 version = "0.0.2"
 edition = "2021"
+rust-version = "1.56"
 authors = ["Ed"]
 description = "A platform-agnostic line editor with history and full editing capabilities"
 license = "MIT OR Unlicense"
