@@ -28,7 +28,7 @@
 //!
 //!     match editor.read_line(&mut terminal) {
 //!         Ok(line) => {
-//!             if line.trim() == "exit" {
+//!             if line == "exit" {
 //!                 break;
 //!             }
 //!             println!("You typed: {}", line);
@@ -557,32 +557,34 @@ impl History {
 
     /// Adds a line to the history.
     ///
-    /// Empty lines and consecutive duplicates are automatically skipped.
+    /// Empty lines (including whitespace-only) and consecutive duplicates are automatically skipped.
     /// When the buffer is full, the oldest entry is overwritten.
     ///
     /// # Arguments
     ///
     /// * `line` - The command line to add to history
     pub fn add(&mut self, line: &str) {
-        // Skip empty lines
-        if line.is_empty() {
+        let trimmed = line.trim();
+
+        // Skip empty or whitespace-only lines
+        if trimmed.is_empty() {
             return;
         }
 
-        // Skip if same as most recent
+        // Skip if same as most recent (after trimming)
         if let Some(last) = self.entries.last() {
-            if last == line {
+            if last == trimmed {
                 return;
             }
         }
 
         if self.entries.len() < self.capacity {
-            self.entries.push(line.to_string());
+            self.entries.push(trimmed.to_string());
             self.current_entry = self.entries.len() - 1;
         } else {
             // Circular buffer - overwrite oldest
             self.current_entry = (self.current_entry + 1) % self.capacity;
-            self.entries[self.current_entry] = line.to_string();
+            self.entries[self.current_entry] = trimmed.to_string();
         }
 
         self.viewing_entry = None;
@@ -746,7 +748,8 @@ impl LineEditor {
     /// Reads a line from the terminal with full editing support.
     ///
     /// Enters raw mode, processes key events until Enter is pressed, then returns
-    /// the edited line. The line is automatically added to history if non-empty.
+    /// the edited line with leading and trailing whitespace removed. The trimmed
+    /// line is automatically added to history if non-empty.
     ///
     /// # Arguments
     ///
@@ -754,7 +757,7 @@ impl LineEditor {
     ///
     /// # Returns
     ///
-    /// `Ok(String)` with the entered line, or `Err` if an I/O error occurs.
+    /// `Ok(String)` with the trimmed entered line, or `Err` if an I/O error occurs.
     ///
     /// # Examples
     ///
@@ -791,12 +794,11 @@ impl LineEditor {
 
         let result = self.line.as_str()
             .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?
+            .trim()
             .to_string();
 
-        // Add to history if non-empty
-        if !result.is_empty() {
-            self.history.add(&result);
-        }
+        // Add to history (History::add will check if empty and skip duplicates)
+        self.history.add(&result);
         self.history.reset_view();
 
         Ok(result)

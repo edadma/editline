@@ -1,6 +1,6 @@
 [package]
 name = "editline"
-version = "0.0.1"
+version = "0.0.2"
 edition = "2021"
 authors = ["Ed"]
 description = "A platform-agnostic line editor with history and full editing capabilities"

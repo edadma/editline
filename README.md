@@ -42,7 +42,7 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-editline = "0.0.1"
+editline = "0.0.2"
 ```
 
 ### Basic REPL Example
@@ -61,10 +61,13 @@ fn main() {
 
         match editor.read_line(&mut terminal) {
             Ok(line) => {
-                if line.trim() == "exit" {
+                if line == "exit" {
                     break;
                 }
-                println!("You typed: {}", line);
+
+                if !line.is_empty() {
+                    println!("typed: {}", line);
+                }
             }
             Err(e) => {
                 eprintln!("Error: {}", e);
@@ -172,7 +175,7 @@ Contributions are welcome! Areas for enhancement:
 
 Licensed under either of:
 
-- MIT license ([LICENSE-MIT](LICENSE-MIT))
+- MIT license ([LICENSE](LICENSE))
 - The Unlicense ([UNLICENSE](UNLICENSE))
 
 at your option.

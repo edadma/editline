@@ -18,13 +18,11 @@ fn main() {
 
         match editor.read_line(&mut terminal) {
             Ok(line) => {
-                let trimmed = line.trim();
-
-                if trimmed == "exit" {
+                if line == "exit" {
                     println!("Goodbye!");
                     break;
-                } else if !trimmed.is_empty() {
-                    println!("typed: {}", trimmed);
+                } else if !line.is_empty() {
+                    println!("typed: {}", line);
                 }
             }
             Err(e) => {
