@@ -42,7 +42,7 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-editline = "0.1"
+editline = "0.0.1"
 ```
 
 ### Basic REPL Example
