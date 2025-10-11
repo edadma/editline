@@ -1,0 +1,23 @@
+[package]
+name = "editline"
+version = "0.1.0"
+edition = "2021"
+authors = ["Ed"]
+description = "A platform-agnostic line editor with history and full editing capabilities"
+license = "MIT OR Unlicense"
+repository = "https://github.com/edadma/editline"
+keywords = ["readline", "line-editor", "repl", "terminal", "cli"]
+categories = ["command-line-interface", "text-editors"]
+readme = "README.md"
+
+[lib]
+name = "editline"
+path = "src/lib.rs"
+
+[dependencies]
+
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"
+
+[target.'cfg(windows)'.dependencies]
+winapi = { version = "0.3", features = ["wincon", "winbase", "handleapi", "consoleapi", "processenv"] }
