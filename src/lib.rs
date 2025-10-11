@@ -286,6 +286,7 @@ pub struct History {
     capacity: usize,
     current_entry: usize,
     viewing_entry: Option<usize>,
+    saved_line: Option<String>,
 }
 
 impl History {
@@ -295,6 +296,7 @@ impl History {
             capacity,
             current_entry: 0,
             viewing_entry: None,
+            saved_line: None,
         }
     }
 
@@ -322,17 +324,19 @@ impl History {
         }
 
         self.viewing_entry = None;
+        self.saved_line = None;
     }
 
     /// Get previous history entry
-    pub fn previous(&mut self) -> Option<&str> {
+    pub fn previous(&mut self, current_line: &str) -> Option<&str> {
         if self.entries.is_empty() {
             return None;
         }
 
         match self.viewing_entry {
             None => {
-                // First time - start at most recent
+                // First time - save current line and start at most recent
+                self.saved_line = Some(current_line.to_string());
                 self.viewing_entry = Some(self.current_entry);
                 Some(&self.entries[self.current_entry])
             }
@@ -373,15 +377,17 @@ impl History {
                         self.viewing_entry = Some(next);
                         Some(&self.entries[next])
                     } else {
+                        // Reached the end, return saved line
                         self.viewing_entry = None;
-                        None
+                        self.saved_line.as_deref()
                     }
                 } else {
                     // Buffer is full
                     let next = (idx + 1) % self.capacity;
                     if next == (self.current_entry + 1) % self.capacity {
+                        // Reached the end, return saved line
                         self.viewing_entry = None;
-                        None
+                        self.saved_line.as_deref()
                     } else {
                         self.viewing_entry = Some(next);
                         Some(&self.entries[next])
@@ -462,7 +468,8 @@ impl LineEditor {
                 }
             }
             KeyEvent::Up => {
-                if let Some(text) = self.history.previous() {
+                let current = self.line.as_str().unwrap_or("").to_string();
+                if let Some(text) = self.history.previous(&current) {
                     let text = text.to_string();
                     self.load_history_into_line(terminal, &text)?;
                 }
@@ -471,10 +478,8 @@ impl LineEditor {
                 if let Some(text) = self.history.next_entry() {
                     let text = text.to_string();
                     self.load_history_into_line(terminal, &text)?;
-                } else {
-                    self.clear_line_display(terminal)?;
-                    self.line.clear();
                 }
+                // If None, we're not viewing history, so do nothing
             }
             KeyEvent::Home => {
                 let count = self.line.move_cursor_to_start();
