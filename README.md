@@ -142,13 +142,13 @@ Try these features:
 ## Architecture
 
 ```
-┌─────────────────────────────────────────┐
-│         LineEditor (lib.rs)             │
-│  ┌───────────┐  ┌──────────────────┐   │
-│  │LineBuffer │  │ History          │   │
-│  │           │  │ (circular buffer)│   │
-│  └───────────┘  └──────────────────┘   │
-└──────────────────┬──────────────────────┘
+┌───────────────────────────────────────┐
+│         LineEditor (lib.rs)           │
+│  ┌───────────┐  ┌──────────────────┐  │
+│  │LineBuffer │  │ History          │  │
+│  │           │  │ (circular buffer)│  │
+│  └───────────┘  └──────────────────┘  │
+└──────────────────┬────────────────────┘
                    │ Terminal trait
         ┌──────────┴──────────┐
         │                     │
@@ -186,8 +186,3 @@ Licensed under either of:
 - The Unlicense ([UNLICENSE](UNLICENSE))
 
 at your option.
-
-## Credits
-
-Ported from the C line editor in the Slate programming language project.
-Designed to be completely platform-agnostic through trait-based abstraction.
