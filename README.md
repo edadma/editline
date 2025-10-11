@@ -159,17 +159,6 @@ Try these features:
 └────────────────┘   └──────────────────┘
 ```
 
-## Comparison to C Implementation
-
-This Rust version improves on the original C implementation from the Slate project:
-
-- **No global state**: History and buffers are owned by `LineEditor`
-- **Complete I/O abstraction**: Core logic has zero I/O dependencies
-- **Type safety**: Enums instead of integer constants
-- **Error handling**: `Result` types throughout
-- **Memory safety**: No manual memory management
-- **Better abstractions**: Generic over `Terminal` trait
-
 ## Contributing
 
 Contributions are welcome! Areas for enhancement:
