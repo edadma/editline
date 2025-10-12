@@ -42,7 +42,7 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-editline = "0.0.2"
+editline = "0.0.3"
 ```
 
 ### Basic REPL Example
@@ -70,8 +70,23 @@ fn main() {
                 }
             }
             Err(e) => {
-                eprintln!("Error: {}", e);
-                break;
+                // Handle Ctrl-C and Ctrl-D
+                match e.kind() {
+                    std::io::ErrorKind::UnexpectedEof => {
+                        // Ctrl-D pressed - exit gracefully
+                        println!("\nGoodbye!");
+                        break;
+                    }
+                    std::io::ErrorKind::Interrupted => {
+                        // Ctrl-C pressed - show message and continue
+                        println!("\nInterrupted. Type 'exit' or press Ctrl-D to quit.");
+                        continue;
+                    }
+                    _ => {
+                        eprintln!("\nError: {}", e);
+                        break;
+                    }
+                }
             }
         }
     }
@@ -142,6 +157,8 @@ Try these features:
 - Ctrl+Left/Right for word navigation
 - Alt+Backspace to delete word left
 - Ctrl+Delete to delete word right
+- Ctrl-D to exit (EOF)
+- Ctrl-C to interrupt current line (continues REPL)
 
 ## Architecture
 

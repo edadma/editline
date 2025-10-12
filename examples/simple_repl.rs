@@ -5,8 +5,9 @@ use editline::LineEditor;
 
 fn main() {
     println!("Simple REPL - Type something and press Enter");
-    println!("Type 'exit' to quit");
+    println!("Type 'exit' or press Ctrl-D to quit");
     println!("Features: line editing, history (up/down), word navigation (Ctrl+arrows)");
+    println!("Press Ctrl-C to cancel current line");
     println!();
 
     let mut editor = LineEditor::new(1024, 50);
@@ -26,8 +27,23 @@ fn main() {
                 }
             }
             Err(e) => {
-                eprintln!("\nError reading input: {}", e);
-                break;
+                // Handle Ctrl-C and Ctrl-D
+                match e.kind() {
+                    std::io::ErrorKind::UnexpectedEof => {
+                        // Ctrl-D pressed - exit gracefully
+                        println!("\nGoodbye!");
+                        break;
+                    }
+                    std::io::ErrorKind::Interrupted => {
+                        // Ctrl-C pressed - show message and continue
+                        println!("\nInterrupted. Type 'exit' or press Ctrl-D to quit.");
+                        continue;
+                    }
+                    _ => {
+                        eprintln!("\nError reading input: {}", e);
+                        break;
+                    }
+                }
             }
         }
     }

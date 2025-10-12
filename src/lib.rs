@@ -778,30 +778,37 @@ impl LineEditor {
         self.line.clear();
         terminal.enter_raw_mode()?;
 
-        loop {
-            let event = terminal.parse_key_event()?;
+        // Use a closure to ensure we always exit raw mode, even on error
+        let result = (|| {
+            loop {
+                let event = terminal.parse_key_event()?;
 
-            if event == KeyEvent::Enter {
-                break;
+                if event == KeyEvent::Enter {
+                    break;
+                }
+
+                self.handle_key_event(terminal, event)?;
             }
 
-            self.handle_key_event(terminal, event)?;
-        }
+            terminal.write(b"\n")?;
+            terminal.flush()?;
 
+            let result = self.line.as_str()
+                .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?
+                .trim()
+                .to_string();
+
+            // Add to history (History::add will check if empty and skip duplicates)
+            self.history.add(&result);
+            self.history.reset_view();
+
+            Ok(result)
+        })();
+
+        // Always exit raw mode, even if an error occurred
         terminal.exit_raw_mode()?;
-        terminal.write(b"\n")?;
-        terminal.flush()?;
 
-        let result = self.line.as_str()
-            .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?
-            .trim()
-            .to_string();
-
-        // Add to history (History::add will check if empty and skip duplicates)
-        self.history.add(&result);
-        self.history.reset_view();
-
-        Ok(result)
+        result
     }
 
     fn handle_key_event<T: Terminal>(&mut self, terminal: &mut T, event: KeyEvent) -> io::Result<()> {

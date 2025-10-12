@@ -173,6 +173,24 @@ impl Terminal for StdioTerminal {
             return Ok(KeyEvent::Enter);
         }
 
+        // Ctrl-D (EOT - End of Transmission)
+        // Standard Unix convention: EOF signal, should exit REPL
+        if c == 4 {
+            return Err(io::Error::new(
+                io::ErrorKind::UnexpectedEof,
+                "EOF (Ctrl-D)"
+            ));
+        }
+
+        // Ctrl-C (ETX - End of Text / Interrupt)
+        // Standard Unix convention: interrupt signal, should cancel current line
+        if c == 3 {
+            return Err(io::Error::new(
+                io::ErrorKind::Interrupted,
+                "Interrupted (Ctrl-C)"
+            ));
+        }
+
         // Backspace
         if c == 8 || c == 127 {
             return Ok(KeyEvent::Backspace);

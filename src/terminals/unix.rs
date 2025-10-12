@@ -59,8 +59,11 @@ impl Terminal for StdioTerminal {
             // Save original settings
             self.original_termios = Some(termios);
 
-            // Disable canonical mode and echo
-            termios.c_lflag &= !(libc::ECHO | libc::ICANON);
+            // Disable canonical mode, echo, and signal generation
+            // ICANON: disable line buffering (read char-by-char)
+            // ECHO: disable echoing input
+            // ISIG: disable signal generation (Ctrl-C, Ctrl-Z, etc.)
+            termios.c_lflag &= !(libc::ECHO | libc::ICANON | libc::ISIG);
 
             // Set minimum characters and timeout
             termios.c_cc[libc::VMIN] = 1;
@@ -108,6 +111,24 @@ impl Terminal for StdioTerminal {
         // Enter/Return
         if c == b'\r' || c == b'\n' {
             return Ok(KeyEvent::Enter);
+        }
+
+        // Ctrl-D (EOT - End of Transmission)
+        // Standard Unix convention: EOF signal, should exit REPL
+        if c == 4 {
+            return Err(io::Error::new(
+                io::ErrorKind::UnexpectedEof,
+                "EOF (Ctrl-D)"
+            ));
+        }
+
+        // Ctrl-C (ETX - End of Text / Interrupt)
+        // Standard Unix convention: interrupt signal, should cancel current line
+        if c == 3 {
+            return Err(io::Error::new(
+                io::ErrorKind::Interrupted,
+                "Interrupted (Ctrl-C)"
+            ));
         }
 
         // Backspace
