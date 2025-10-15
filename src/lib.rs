@@ -857,6 +857,11 @@ impl LineEditor {
                 self.handle_key_event(terminal, event)?;
             }
 
+            // Platform-specific line ending
+            // Unix/Linux uses \n, but serial terminals (micro:bit) need \r\n
+            #[cfg(feature = "microbit")]
+            terminal.write(b"\r\n")?;
+            #[cfg(not(feature = "microbit"))]
             terminal.write(b"\n")?;
             terminal.flush()?;
 

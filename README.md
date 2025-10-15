@@ -42,11 +42,11 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-editline = "0.0.5"
+editline = "0.0.12"
 
 # For micro:bit support
 [target.'cfg(target_os = "none")'.dependencies]
-editline = { version = "0.0.5", features = ["microbit"], default-features = false }
+editline = { version = "0.0.12", features = ["microbit"], default-features = false }
 ```
 
 ### Basic REPL Example
@@ -185,7 +185,7 @@ Then use editline in your `Cargo.toml`:
 
 ```toml
 [dependencies]
-editline = { version = "0.0.3", default-features = false }
+editline = { version = "0.0.12", default-features = false }
 ```
 
 Try these features:
@@ -197,6 +197,47 @@ Try these features:
 - Ctrl+Delete to delete word right
 - Ctrl-D to exit (EOF)
 - Ctrl-C to interrupt current line (continues REPL)
+
+## Platform Support
+
+### Supported Platforms
+
+- **Linux/Unix**: Uses termios for raw mode and ANSI escape sequences for cursor control
+- **Windows**: Uses Windows Console API for native terminal control
+- **micro:bit v2**: UART-based terminal with proper line endings (CRLF) for serial terminals
+
+### Platform-Specific Behavior
+
+**Line Endings:**
+- Unix/Linux/macOS: `\n` (LF)
+- micro:bit (serial terminals): `\r\n` (CRLF)
+
+The library automatically handles platform-specific line endings through conditional compilation.
+
+### Building for Different Platforms
+
+**Desktop (Linux/Windows/macOS):**
+```bash
+cargo build --release
+cargo run --example simple_repl
+```
+
+**micro:bit v2:**
+```bash
+# Requires nightly toolchain for build-std
+cargo +nightly build --release \
+    --target thumbv7em-none-eabihf \
+    --no-default-features \
+    --features microbit \
+    -Z build-std=core,alloc
+
+# With probe-rs runner configured:
+cargo +nightly run --release \
+    --target thumbv7em-none-eabihf \
+    --no-default-features \
+    --features microbit \
+    -Z build-std=core,alloc
+```
 
 ## Architecture
 
