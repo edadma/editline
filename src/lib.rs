@@ -118,7 +118,7 @@ extern crate alloc;
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 use core::fmt;
-use core::result::Result::{Ok, Err};
+use core::result::Result::Ok;
 use core::option::Option::{self, Some, None};
 use core::convert::From;
 
@@ -858,10 +858,10 @@ impl LineEditor {
             }
 
             // Platform-specific line ending
-            // Unix/Linux uses \n, but serial terminals (micro:bit) need \r\n
-            #[cfg(feature = "microbit")]
+            // Unix/Linux/macOS uses \n, but embedded serial terminals need \r\n
+            #[cfg(not(feature = "std"))]
             terminal.write(b"\r\n")?;
-            #[cfg(not(feature = "microbit"))]
+            #[cfg(feature = "std")]
             terminal.write(b"\n")?;
             terminal.flush()?;
 
