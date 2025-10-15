@@ -57,62 +57,132 @@
 //! To use editline with custom I/O (UART, network, etc.), implement the [`Terminal`] trait:
 //!
 //! ```
-//! use editline::{Terminal, KeyEvent};
-//! use std::io;
+//! use editline::{Terminal, KeyEvent, Result};
 //!
 //! struct MyTerminal {
 //!     // Your platform-specific fields
 //! }
 //!
 //! impl Terminal for MyTerminal {
-//!     fn read_byte(&mut self) -> io::Result<u8> {
+//!     fn read_byte(&mut self) -> Result<u8> {
 //!         // Read from your input source
 //! #       Ok(b'x')
 //!     }
 //!
-//!     fn write(&mut self, data: &[u8]) -> io::Result<()> {
+//!     fn write(&mut self, data: &[u8]) -> Result<()> {
 //!         // Write to your output
 //! #       Ok(())
 //!     }
 //!
-//!     fn flush(&mut self) -> io::Result<()> {
+//!     fn flush(&mut self) -> Result<()> {
 //!         // Flush output
 //! #       Ok(())
 //!     }
 //!
-//!     fn enter_raw_mode(&mut self) -> io::Result<()> {
+//!     fn enter_raw_mode(&mut self) -> Result<()> {
 //!         // Configure for character-by-character input
 //! #       Ok(())
 //!     }
 //!
-//!     fn exit_raw_mode(&mut self) -> io::Result<()> {
+//!     fn exit_raw_mode(&mut self) -> Result<()> {
 //!         // Restore normal mode
 //! #       Ok(())
 //!     }
 //!
-//!     fn cursor_left(&mut self) -> io::Result<()> {
+//!     fn cursor_left(&mut self) -> Result<()> {
 //!         // Move cursor left one position
 //! #       Ok(())
 //!     }
 //!
-//!     fn cursor_right(&mut self) -> io::Result<()> {
+//!     fn cursor_right(&mut self) -> Result<()> {
 //!         // Move cursor right one position
 //! #       Ok(())
 //!     }
 //!
-//!     fn clear_eol(&mut self) -> io::Result<()> {
+//!     fn clear_eol(&mut self) -> Result<()> {
 //!         // Clear from cursor to end of line
 //! #       Ok(())
 //!     }
 //!
-//!     fn parse_key_event(&mut self) -> io::Result<KeyEvent> {
+//!     fn parse_key_event(&mut self) -> Result<KeyEvent> {
 //!         // Parse input bytes into key events
 //! #       Ok(KeyEvent::Enter)
 //!     }
 //! }
 //! ```
 
-use std::io;
+#![cfg_attr(not(feature = "std"), no_std)]
+
+extern crate alloc;
+
+use alloc::string::{String, ToString};
+use alloc::vec::Vec;
+use core::fmt;
+
+// Import prelude types that are normally available via std::prelude
+#[cfg(not(feature = "std"))]
+use core::prelude::v1::*;
+
+/// Error type for editline operations
+#[derive(Debug)]
+pub enum Error {
+    /// I/O error occurred
+    Io(&'static str),
+    /// Invalid UTF-8 data
+    InvalidUtf8,
+    /// End of file
+    Eof,
+    /// Operation interrupted
+    Interrupted,
+}
+
+impl fmt::Display for Error {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Error::Io(msg) => {
+                f.write_str("I/O error: ")?;
+                f.write_str(msg)
+            }
+            Error::InvalidUtf8 => f.write_str("Invalid UTF-8"),
+            Error::Eof => f.write_str("End of file"),
+            Error::Interrupted => f.write_str("Interrupted"),
+        }
+    }
+}
+
+#[cfg(feature = "std")]
+impl From<std::io::Error> for Error {
+    fn from(e: std::io::Error) -> Self {
+        use std::io::ErrorKind;
+        match e.kind() {
+            ErrorKind::UnexpectedEof => Error::Eof,
+            ErrorKind::Interrupted => Error::Interrupted,
+            _ => Error::Io("I/O error"),
+        }
+    }
+}
+
+#[cfg(feature = "std")]
+impl From<Error> for std::io::Error {
+    fn from(e: Error) -> Self {
+        use std::io::{Error as IoError, ErrorKind};
+        match e {
+            Error::Io(msg) => IoError::new(ErrorKind::Other, msg),
+            Error::InvalidUtf8 => IoError::new(ErrorKind::InvalidData, "Invalid UTF-8"),
+            Error::Eof => IoError::new(ErrorKind::UnexpectedEof, "End of file"),
+            Error::Interrupted => IoError::new(ErrorKind::Interrupted, "Interrupted"),
+        }
+    }
+}
+
+impl From<core::str::Utf8Error> for Error {
+    fn from(_: core::str::Utf8Error) -> Self {
+        Error::InvalidUtf8
+    }
+}
+
+/// Result type for editline operations
+pub type Result<T> = core::result::Result<T, Error>;
 
 /// Key events that can be processed by the line editor
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -161,8 +231,7 @@ pub enum KeyEvent {
 /// # Example
 ///
 /// ```
-/// use editline::{Terminal, KeyEvent};
-/// use std::io;
+/// use editline::{Terminal, KeyEvent, Result};
 ///
 /// struct MockTerminal {
 ///     input: Vec<u8>,
@@ -170,72 +239,71 @@ pub enum KeyEvent {
 /// }
 ///
 /// impl Terminal for MockTerminal {
-///     fn read_byte(&mut self) -> io::Result<u8> {
-///         self.input.pop().ok_or_else(||
-///             io::Error::new(io::ErrorKind::UnexpectedEof, "no input"))
+///     fn read_byte(&mut self) -> Result<u8> {
+///         self.input.pop().ok_or(editline::Error::Eof)
 ///     }
 ///
-///     fn write(&mut self, data: &[u8]) -> io::Result<()> {
+///     fn write(&mut self, data: &[u8]) -> Result<()> {
 ///         self.output.extend_from_slice(data);
 ///         Ok(())
 ///     }
 ///
 ///     // ... implement other methods
-/// #   fn flush(&mut self) -> io::Result<()> { Ok(()) }
-/// #   fn enter_raw_mode(&mut self) -> io::Result<()> { Ok(()) }
-/// #   fn exit_raw_mode(&mut self) -> io::Result<()> { Ok(()) }
-/// #   fn cursor_left(&mut self) -> io::Result<()> { Ok(()) }
-/// #   fn cursor_right(&mut self) -> io::Result<()> { Ok(()) }
-/// #   fn clear_eol(&mut self) -> io::Result<()> { Ok(()) }
-/// #   fn parse_key_event(&mut self) -> io::Result<KeyEvent> { Ok(KeyEvent::Enter) }
+/// #   fn flush(&mut self) -> Result<()> { Ok(()) }
+/// #   fn enter_raw_mode(&mut self) -> Result<()> { Ok(()) }
+/// #   fn exit_raw_mode(&mut self) -> Result<()> { Ok(()) }
+/// #   fn cursor_left(&mut self) -> Result<()> { Ok(()) }
+/// #   fn cursor_right(&mut self) -> Result<()> { Ok(()) }
+/// #   fn clear_eol(&mut self) -> Result<()> { Ok(()) }
+/// #   fn parse_key_event(&mut self) -> Result<KeyEvent> { Ok(KeyEvent::Enter) }
 /// }
 /// ```
 pub trait Terminal {
     /// Reads a single byte from the input source.
     ///
     /// This is called repeatedly to fetch user input. Should block until a byte is available.
-    fn read_byte(&mut self) -> io::Result<u8>;
+    fn read_byte(&mut self) -> Result<u8>;
 
     /// Writes raw bytes to the output.
     ///
     /// Used to display typed characters and redraw the line during editing.
-    fn write(&mut self, data: &[u8]) -> io::Result<()>;
+    fn write(&mut self, data: &[u8]) -> Result<()>;
 
     /// Flushes any buffered output.
     ///
     /// Called after each key event to ensure immediate visual feedback.
-    fn flush(&mut self) -> io::Result<()>;
+    fn flush(&mut self) -> Result<()>;
 
     /// Enters raw mode for character-by-character input.
     ///
     /// Should disable line buffering and echo. Called at the start of [`LineEditor::read_line`].
-    fn enter_raw_mode(&mut self) -> io::Result<()>;
+    fn enter_raw_mode(&mut self) -> Result<()>;
 
     /// Exits raw mode and restores normal terminal settings.
     ///
     /// Called at the end of [`LineEditor::read_line`] to restore the terminal state.
-    fn exit_raw_mode(&mut self) -> io::Result<()>;
+    fn exit_raw_mode(&mut self) -> Result<()>;
 
     /// Moves the cursor left by one position.
     ///
     /// Typically outputs an ANSI escape sequence like `\x1b[D` or calls a platform API.
-    fn cursor_left(&mut self) -> io::Result<()>;
+    fn cursor_left(&mut self) -> Result<()>;
 
     /// Moves the cursor right by one position.
     ///
     /// Typically outputs an ANSI escape sequence like `\x1b[C` or calls a platform API.
-    fn cursor_right(&mut self) -> io::Result<()>;
+    fn cursor_right(&mut self) -> Result<()>;
 
     /// Clears from the cursor position to the end of the line.
     ///
     /// Typically outputs an ANSI escape sequence like `\x1b[K` or calls a platform API.
-    fn clear_eol(&mut self) -> io::Result<()>;
+    fn clear_eol(&mut self) -> Result<()>;
 
     /// Parses the next key event from input.
     ///
     /// Should handle multi-byte sequences (like ANSI escape codes) and return a single
     /// [`KeyEvent`]. Called once per key press by [`LineEditor::read_line`].
-    fn parse_key_event(&mut self) -> io::Result<KeyEvent>;
+    fn parse_key_event(&mut self) -> Result<KeyEvent>;
 }
 
 /// Text buffer with cursor tracking for line editing operations.
@@ -300,8 +368,8 @@ impl LineBuffer {
     /// # Errors
     ///
     /// Returns `Err` if the buffer contains invalid UTF-8.
-    pub fn as_str(&self) -> Result<&str, std::str::Utf8Error> {
-        std::str::from_utf8(&self.buffer)
+    pub fn as_str(&self) -> Result<&str> {
+        core::str::from_utf8(&self.buffer).map_err(|_| Error::InvalidUtf8)
     }
 
     /// Returns the buffer contents as a byte slice.
@@ -772,9 +840,9 @@ impl LineEditor {
     ///
     /// let line = editor.read_line(&mut terminal)?;
     /// println!("You entered: {}", line);
-    /// # Ok::<(), std::io::Error>(())
+    /// # Ok::<(), editline::Error>(())
     /// ```
-    pub fn read_line<T: Terminal>(&mut self, terminal: &mut T) -> io::Result<String> {
+    pub fn read_line<T: Terminal>(&mut self, terminal: &mut T) -> Result<String> {
         self.line.clear();
         terminal.enter_raw_mode()?;
 
@@ -793,8 +861,7 @@ impl LineEditor {
             terminal.write(b"\n")?;
             terminal.flush()?;
 
-            let result = self.line.as_str()
-                .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?
+            let result = self.line.as_str()?
                 .trim()
                 .to_string();
 
@@ -811,7 +878,7 @@ impl LineEditor {
         result
     }
 
-    fn handle_key_event<T: Terminal>(&mut self, terminal: &mut T, event: KeyEvent) -> io::Result<()> {
+    fn handle_key_event<T: Terminal>(&mut self, terminal: &mut T, event: KeyEvent) -> Result<()> {
         match event {
             KeyEvent::Normal(c) => {
                 self.history.reset_view();
@@ -900,7 +967,7 @@ impl LineEditor {
         Ok(())
     }
 
-    fn redraw_from_cursor<T: Terminal>(&self, terminal: &mut T) -> io::Result<()> {
+    fn redraw_from_cursor<T: Terminal>(&self, terminal: &mut T) -> Result<()> {
         terminal.clear_eol()?;
 
         let cursor_pos = self.line.cursor_pos();
@@ -915,7 +982,7 @@ impl LineEditor {
         Ok(())
     }
 
-    fn clear_line_display<T: Terminal>(&self, terminal: &mut T) -> io::Result<()> {
+    fn clear_line_display<T: Terminal>(&self, terminal: &mut T) -> Result<()> {
         for _ in 0..self.line.cursor_pos() {
             terminal.cursor_left()?;
         }
@@ -923,7 +990,7 @@ impl LineEditor {
         Ok(())
     }
 
-    fn load_history_into_line<T: Terminal>(&mut self, terminal: &mut T, text: &str) -> io::Result<()> {
+    fn load_history_into_line<T: Terminal>(&mut self, terminal: &mut T, text: &str) -> Result<()> {
         self.clear_line_display(terminal)?;
         self.line.load(text);
         terminal.write(text.as_bytes())?;
@@ -931,7 +998,8 @@ impl LineEditor {
     }
 }
 
-// Re-export terminal implementations
+// Re-export terminal implementations (only with std feature)
+#[cfg(feature = "std")]
 pub mod terminals;
 
 #[cfg(test)]

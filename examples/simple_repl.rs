@@ -28,13 +28,13 @@ fn main() {
             }
             Err(e) => {
                 // Handle Ctrl-C and Ctrl-D
-                match e.kind() {
-                    std::io::ErrorKind::UnexpectedEof => {
+                match e {
+                    editline::Error::Eof => {
                         // Ctrl-D pressed - exit gracefully
                         println!("\nGoodbye!");
                         break;
                     }
-                    std::io::ErrorKind::Interrupted => {
+                    editline::Error::Interrupted => {
                         // Ctrl-C pressed - show message and continue
                         println!("\nInterrupted. Type 'exit' or press Ctrl-D to quit.");
                         continue;

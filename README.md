@@ -144,10 +144,44 @@ impl Terminal for MyCustomTerminal {
 }
 ```
 
-## Running the Example
+## Running the Examples
+
+### Standard Terminal (Linux/Windows/macOS)
 
 ```bash
 cargo run --example simple_repl
+```
+
+### Embedded micro:bit Example
+
+For embedded targets, you need to:
+
+1. Build with `--no-default-features` to disable the `std` feature
+2. Provide the appropriate target and build configuration
+
+```bash
+cargo build --example microbit_repl --no-default-features --target thumbv7em-none-eabihf -Z build-std=core,alloc
+```
+
+For convenience when developing embedded applications, create a `.cargo/config.toml` in your project:
+
+```toml
+[target.thumbv7em-none-eabihf]
+runner = "probe-rs run --chip nRF52833_xxAA"
+rustflags = ["-C", "link-arg=-Tlink.x"]
+
+[build]
+target = "thumbv7em-none-eabihf"
+
+[unstable]
+build-std = ["core", "alloc"]
+```
+
+Then use editline in your `Cargo.toml`:
+
+```toml
+[dependencies]
+editline = { version = "0.0.3", default-features = false }
 ```
 
 Try these features:

@@ -22,7 +22,7 @@ pub struct StdioTerminal {
 }
 
 impl StdioTerminal {
-    pub fn new() -> io::Result<Self> {
+    pub fn new() -> crate::Result<Self> {
         unsafe {
             let stdin_handle = GetStdHandle(STD_INPUT_HANDLE);
             let stdout_handle = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -47,7 +47,7 @@ impl Default for StdioTerminal {
 }
 
 impl Terminal for StdioTerminal {
-    fn read_byte(&mut self) -> io::Result<u8> {
+    fn read_byte(&mut self) -> crate::Result<u8> {
         let mut buf = [0u8; 1];
         let mut bytes_read: u32 = 0;
 
@@ -71,16 +71,16 @@ impl Terminal for StdioTerminal {
         Ok(buf[0])
     }
 
-    fn write(&mut self, data: &[u8]) -> io::Result<()> {
+    fn write(&mut self, data: &[u8]) -> crate::Result<()> {
         let mut stdout = io::stdout();
         stdout.write_all(data)
     }
 
-    fn flush(&mut self) -> io::Result<()> {
+    fn flush(&mut self) -> crate::Result<()> {
         io::stdout().flush()
     }
 
-    fn enter_raw_mode(&mut self) -> io::Result<()> {
+    fn enter_raw_mode(&mut self) -> crate::Result<()> {
         unsafe {
             let mut mode: u32 = 0;
             if GetConsoleMode(self.stdin_handle, &mut mode) == 0 {
@@ -100,7 +100,7 @@ impl Terminal for StdioTerminal {
         Ok(())
     }
 
-    fn exit_raw_mode(&mut self) -> io::Result<()> {
+    fn exit_raw_mode(&mut self) -> crate::Result<()> {
         if let Some(original) = self.original_mode {
             unsafe {
                 if SetConsoleMode(self.stdin_handle, original) == 0 {
@@ -113,11 +113,11 @@ impl Terminal for StdioTerminal {
         Ok(())
     }
 
-    fn cursor_left(&mut self) -> io::Result<()> {
+    fn cursor_left(&mut self) -> crate::Result<()> {
         self.write(b"\x08")
     }
 
-    fn cursor_right(&mut self) -> io::Result<()> {
+    fn cursor_right(&mut self) -> crate::Result<()> {
         unsafe {
             let mut csbi: CONSOLE_SCREEN_BUFFER_INFO = std::mem::zeroed();
             if GetConsoleScreenBufferInfo(self.stdout_handle, &mut csbi) == 0 {
@@ -135,7 +135,7 @@ impl Terminal for StdioTerminal {
         Ok(())
     }
 
-    fn clear_eol(&mut self) -> io::Result<()> {
+    fn clear_eol(&mut self) -> crate::Result<()> {
         unsafe {
             let mut csbi: CONSOLE_SCREEN_BUFFER_INFO = std::mem::zeroed();
             if GetConsoleScreenBufferInfo(self.stdout_handle, &mut csbi) == 0 {
@@ -165,7 +165,7 @@ impl Terminal for StdioTerminal {
         Ok(())
     }
 
-    fn parse_key_event(&mut self) -> io::Result<KeyEvent> {
+    fn parse_key_event(&mut self) -> crate::Result<KeyEvent> {
         let c = self.read_byte()?;
 
         // Enter

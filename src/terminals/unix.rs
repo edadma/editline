@@ -20,9 +20,9 @@ impl StdioTerminal {
         }
     }
 
-    fn read_byte_internal(&mut self) -> io::Result<u8> {
+    fn read_byte_internal(&mut self) -> crate::Result<u8> {
         let mut buf = [0u8; 1];
-        self.stdin.read_exact(&mut buf)?;
+        self.stdin.read_exact(&mut buf).map_err(crate::Error::from)?;
         Ok(buf[0])
     }
 }
@@ -34,26 +34,26 @@ impl Default for StdioTerminal {
 }
 
 impl Terminal for StdioTerminal {
-    fn read_byte(&mut self) -> io::Result<u8> {
+    fn read_byte(&mut self) -> crate::Result<u8> {
         self.read_byte_internal()
     }
 
-    fn write(&mut self, data: &[u8]) -> io::Result<()> {
-        self.stdout.write_all(data)
+    fn write(&mut self, data: &[u8]) -> crate::Result<()> {
+        self.stdout.write_all(data).map_err(crate::Error::from)
     }
 
-    fn flush(&mut self) -> io::Result<()> {
-        self.stdout.flush()
+    fn flush(&mut self) -> crate::Result<()> {
+        self.stdout.flush().map_err(crate::Error::from)
     }
 
-    fn enter_raw_mode(&mut self) -> io::Result<()> {
+    fn enter_raw_mode(&mut self) -> crate::Result<()> {
         let fd = self.stdin.as_raw_fd();
 
         unsafe {
             let mut termios: libc::termios = std::mem::zeroed();
 
             if libc::tcgetattr(fd, &mut termios) != 0 {
-                return Err(io::Error::last_os_error());
+                return Err(io::Error::last_os_error().into());
             }
 
             // Save original settings
@@ -70,20 +70,20 @@ impl Terminal for StdioTerminal {
             termios.c_cc[libc::VTIME] = 0;
 
             if libc::tcsetattr(fd, libc::TCSAFLUSH, &termios) != 0 {
-                return Err(io::Error::last_os_error());
+                return Err(io::Error::last_os_error().into());
             }
         }
 
         Ok(())
     }
 
-    fn exit_raw_mode(&mut self) -> io::Result<()> {
+    fn exit_raw_mode(&mut self) -> crate::Result<()> {
         if let Some(original) = self.original_termios {
             let fd = self.stdin.as_raw_fd();
 
             unsafe {
                 if libc::tcsetattr(fd, libc::TCSAFLUSH, &original) != 0 {
-                    return Err(io::Error::last_os_error());
+                    return Err(io::Error::last_os_error().into());
                 }
             }
 
@@ -93,19 +93,19 @@ impl Terminal for StdioTerminal {
         Ok(())
     }
 
-    fn cursor_left(&mut self) -> io::Result<()> {
+    fn cursor_left(&mut self) -> crate::Result<()> {
         self.write(b"\x1b[D")
     }
 
-    fn cursor_right(&mut self) -> io::Result<()> {
+    fn cursor_right(&mut self) -> crate::Result<()> {
         self.write(b"\x1b[C")
     }
 
-    fn clear_eol(&mut self) -> io::Result<()> {
+    fn clear_eol(&mut self) -> crate::Result<()> {
         self.write(b"\x1b[K")
     }
 
-    fn parse_key_event(&mut self) -> io::Result<KeyEvent> {
+    fn parse_key_event(&mut self) -> crate::Result<KeyEvent> {
         let c = self.read_byte_internal()?;
 
         // Enter/Return
@@ -116,19 +116,13 @@ impl Terminal for StdioTerminal {
         // Ctrl-D (EOT - End of Transmission)
         // Standard Unix convention: EOF signal, should exit REPL
         if c == 4 {
-            return Err(io::Error::new(
-                io::ErrorKind::UnexpectedEof,
-                "EOF (Ctrl-D)"
-            ));
+            return Err(crate::Error::Eof);
         }
 
         // Ctrl-C (ETX - End of Text / Interrupt)
         // Standard Unix convention: interrupt signal, should cancel current line
         if c == 3 {
-            return Err(io::Error::new(
-                io::ErrorKind::Interrupted,
-                "Interrupted (Ctrl-C)"
-            ));
+            return Err(crate::Error::Interrupted);
         }
 
         // Backspace

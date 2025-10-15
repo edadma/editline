@@ -17,8 +17,33 @@ path = "src/lib.rs"
 
 [dependencies]
 
-[target.'cfg(unix)'.dependencies]
-libc = "0.2"
+[target.'cfg(all(unix, not(target_os = "none")))'.dependencies]
+libc = { version = "0.2", optional = true }
 
-[target.'cfg(windows)'.dependencies]
-winapi = { version = "0.3", features = ["wincon", "winbase", "handleapi", "consoleapi", "processenv"] }
+[target.'cfg(all(windows, not(target_os = "none")))'.dependencies]
+winapi = { version = "0.3", features = ["wincon", "winbase", "handleapi", "consoleapi", "processenv"], optional = true }
+
+[features]
+default = ["std"]
+std = ["libc", "winapi"]
+
+[[example]]
+name = "microbit_repl"
+required-features = []
+
+[profile.dev]
+opt-level = 1
+panic = "abort"
+
+[profile.release]
+opt-level = "z"
+lto = true
+panic = "abort"
+
+[target.'cfg(target_arch = "arm")'.dev-dependencies]
+cortex-m = "0.7"
+cortex-m-rt = "0.7"
+panic-halt = "0.2"
+microbit-v2 = "0.15"
+alloc-cortex-m = "0.4"
+embedded-io = "0.6"
