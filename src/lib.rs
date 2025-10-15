@@ -122,6 +122,8 @@ use core::fmt;
 // Import prelude types that are normally available via std::prelude
 #[cfg(not(feature = "std"))]
 use core::prelude::v1::*;
+#[cfg(not(feature = "std"))]
+use core::result::Result::{Ok, Err};
 
 /// Error type for editline operations
 #[derive(Debug)]
