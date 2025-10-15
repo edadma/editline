@@ -1,5 +1,6 @@
 use core::ptr::addr_of_mut;
 use core::fmt::Write as FmtWrite;
+use core::result::Result::{Ok, Err};
 use embedded_io::Read as EmbeddedRead;
 pub use microbit::{Board, hal::uarte::{Baudrate, Parity, Uarte, UarteRx, UarteTx, Instance}};
 use crate::{Terminal, KeyEvent, Result, Error};
