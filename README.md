@@ -42,7 +42,11 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-editline = "0.0.3"
+editline = "0.0.5"
+
+# For micro:bit support
+[target.'cfg(target_os = "none")'.dependencies]
+editline = { version = "0.0.5", features = ["microbit"], default-features = false }
 ```
 
 ### Basic REPL Example

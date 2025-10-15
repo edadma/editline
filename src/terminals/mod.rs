@@ -11,3 +11,9 @@ mod windows;
 
 #[cfg(windows)]
 pub use windows::StdioTerminal;
+
+#[cfg(feature = "microbit")]
+pub mod microbit;
+
+#[cfg(feature = "microbit")]
+pub use microbit::UarteTerminal;

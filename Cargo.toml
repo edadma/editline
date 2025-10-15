@@ -1,6 +1,6 @@
 [package]
 name = "editline"
-version = "0.0.4"
+version = "0.0.5"
 edition = "2021"
 rust-version = "1.56"
 authors = ["Ed"]
@@ -16,6 +16,8 @@ name = "editline"
 path = "src/lib.rs"
 
 [dependencies]
+microbit-v2 = { version = "0.15", optional = true }
+embedded-io = { version = "0.6", optional = true }
 
 [target.'cfg(all(unix, not(target_os = "none")))'.dependencies]
 libc = { version = "0.2", optional = true }
@@ -26,6 +28,7 @@ winapi = { version = "0.3", features = ["wincon", "winbase", "handleapi", "conso
 [features]
 default = ["std"]
 std = ["libc", "winapi"]
+microbit = ["microbit-v2", "embedded-io"]
 
 [[example]]
 name = "microbit_repl"
