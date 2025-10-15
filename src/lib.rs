@@ -119,11 +119,8 @@ use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 use core::fmt;
 use core::result::Result::{Ok, Err};
-use core::option::Option::{Some, None};
-
-// Import prelude types that are normally available via std::prelude
-#[cfg(not(feature = "std"))]
-use core::prelude::v1::*;
+use core::option::Option::{self, Some, None};
+use core::convert::From;
 
 /// Error type for editline operations
 #[derive(Debug)]
