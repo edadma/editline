@@ -131,6 +131,26 @@ impl<T: Instance> Terminal for UarteTerminal<T> {
                                     }
                                 }
                             }
+                            // Extended sequences like ESC[1;5D (Ctrl+Left)
+                            b'1' => {
+                                if let Ok(semicolon) = self.read_byte_blocking() {
+                                    if semicolon == b';' {
+                                        if let Ok(modifier) = self.read_byte_blocking() {
+                                            if modifier == b'5' { // Ctrl modifier
+                                                if let Ok(final_byte) = self.read_byte_blocking() {
+                                                    match final_byte {
+                                                        b'D' => return Ok(KeyEvent::CtrlLeft),
+                                                        b'C' => return Ok(KeyEvent::CtrlRight),
+                                                        _ => {} // Unknown Ctrl+key combo, drain
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                // If we get here, drain the rest of the sequence
+                                return Ok(KeyEvent::Normal('\0'));
+                            }
                             // Unknown escape sequence - consume until we hit a letter or tilde
                             _ => {
                                 let mut byte = c3;
