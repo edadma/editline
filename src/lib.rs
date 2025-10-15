@@ -1000,8 +1000,8 @@ impl LineEditor {
     }
 }
 
-// Re-export terminal implementations (only with std feature)
-#[cfg(feature = "std")]
+// Re-export terminal implementations
+#[cfg(any(feature = "std", feature = "microbit"))]
 pub mod terminals;
 
 #[cfg(test)]
