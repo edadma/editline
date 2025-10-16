@@ -42,11 +42,11 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-editline = "0.0.13"
+editline = "0.0.14"
 
 # For micro:bit support
 [target.'cfg(target_os = "none")'.dependencies]
-editline = { version = "0.0.13", features = ["microbit"], default-features = false }
+editline = { version = "0.0.14", features = ["microbit"], default-features = false }
 ```
 
 ### Basic REPL Example
@@ -174,8 +174,9 @@ For convenience when developing embedded applications, create a `.cargo/config.t
 runner = "probe-rs run --chip nRF52833_xxAA"
 rustflags = ["-C", "link-arg=-Tlink.x"]
 
-[build]
-target = "thumbv7em-none-eabihf"
+# Note: No [build] section with default target!
+# This allows both Linux and embedded builds to work.
+# For embedded builds, explicitly specify: --target thumbv7em-none-eabihf
 
 [unstable]
 build-std = ["core", "alloc"]
@@ -185,7 +186,7 @@ Then use editline in your `Cargo.toml`:
 
 ```toml
 [dependencies]
-editline = { version = "0.0.13", default-features = false }
+editline = { version = "0.0.14", default-features = false }
 ```
 
 Try these features:
