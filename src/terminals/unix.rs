@@ -1,10 +1,25 @@
-// Unix terminal implementation using termios and ANSI escape codes
+//! Unix terminal implementation using termios and ANSI escape codes.
+//!
+//! This implementation uses POSIX termios to enable raw mode (character-by-character
+//! input without echo) and ANSI escape sequences for cursor control.
 
 use crate::{KeyEvent, Terminal};
 use std::io::{self, Read, Write};
 use std::os::unix::io::AsRawFd;
 
-/// Unix terminal using stdin/stdout with termios
+/// Unix terminal using stdin/stdout with termios.
+///
+/// Provides a [`Terminal`](crate::Terminal) implementation for Unix-like systems
+/// (Linux, macOS, BSD) using standard input/output with termios for raw mode
+/// and ANSI escape sequences for cursor control.
+///
+/// # Examples
+///
+/// ```no_run
+/// use editline::terminals::StdioTerminal;
+///
+/// let terminal = StdioTerminal::new();
+/// ```
 pub struct StdioTerminal {
     stdin: io::Stdin,
     stdout: io::Stdout,
@@ -12,6 +27,10 @@ pub struct StdioTerminal {
 }
 
 impl StdioTerminal {
+    /// Creates a new Unix terminal using stdin/stdout.
+    ///
+    /// The terminal starts in normal mode. Call [`Terminal::enter_raw_mode`](crate::Terminal::enter_raw_mode)
+    /// to enable character-by-character input.
     pub fn new() -> Self {
         Self {
             stdin: io::stdin(),

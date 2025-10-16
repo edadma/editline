@@ -1,4 +1,7 @@
-// Windows terminal implementation using Console API
+//! Windows terminal implementation using the Console API.
+//!
+//! This implementation uses Windows Console API functions to enable raw mode
+//! (disabling line input and echo) and control the cursor position directly.
 
 use crate::{KeyEvent, Terminal};
 use std::io::{self, Write};
@@ -14,7 +17,18 @@ use winapi::um::wincon::{
 };
 use winapi::um::winnt::HANDLE;
 
-/// Windows terminal using stdin/stdout with Console API
+/// Windows terminal using stdin/stdout with Console API.
+///
+/// Provides a [`Terminal`](crate::Terminal) implementation for Windows
+/// using the native Console API for raw mode and cursor control.
+///
+/// # Examples
+///
+/// ```no_run
+/// use editline::terminals::StdioTerminal;
+///
+/// let terminal = StdioTerminal::new().expect("Failed to create terminal");
+/// ```
 pub struct StdioTerminal {
     stdin_handle: HANDLE,
     stdout_handle: HANDLE,
@@ -22,6 +36,11 @@ pub struct StdioTerminal {
 }
 
 impl StdioTerminal {
+    /// Creates a new Windows terminal using stdin/stdout handles.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the standard handles cannot be obtained.
     pub fn new() -> crate::Result<Self> {
         unsafe {
             let stdin_handle = GetStdHandle(STD_INPUT_HANDLE);

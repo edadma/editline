@@ -1,3 +1,18 @@
+//! micro:bit v2 terminal implementation using UART.
+//!
+//! This implementation provides a [`Terminal`](crate::Terminal) for the micro:bit v2
+//! development board, using the nRF52833's UARTE peripheral for serial communication
+//! over USB at 115200 baud.
+//!
+//! # Examples
+//!
+//! ```no_run
+//! use editline::terminals::microbit::{from_board, Board};
+//!
+//! let board = Board::take().unwrap();
+//! let terminal = from_board(board);
+//! ```
+
 use core::ptr::addr_of_mut;
 use core::fmt::Write as FmtWrite;
 use core::result::Result::{Ok, Err};
@@ -5,16 +20,55 @@ use embedded_io::Read as EmbeddedRead;
 pub use microbit::{Board, hal::uarte::{Baudrate, Parity, Uarte, UarteRx, UarteTx, Instance}};
 use crate::{Terminal, KeyEvent, Result, Error};
 
+/// Transmit buffer for UART operations.
+///
+/// Single-byte buffer used for non-blocking UART transmission.
 static mut TX_BUF: [u8; 1] = [0; 1];
+
+/// Receive buffer for UART operations.
+///
+/// Single-byte buffer used for UART reception.
 static mut RX_BUF: [u8; 1] = [0; 1];
 
-/// UART Terminal implementation for micro:bit
+/// UART terminal implementation for micro:bit v2.
+///
+/// Provides serial communication at 115200 baud with support for ANSI escape
+/// sequences (arrow keys, cursor control). Designed for use with serial terminal
+/// programs like minicom, screen, or PuTTY.
+///
+/// # Type Parameters
+///
+/// * `T` - The UARTE instance type (typically `microbit::pac::UARTE0`)
 pub struct UarteTerminal<T: Instance> {
     tx: UarteTx<T>,
     rx: UarteRx<T>,
 }
 
 impl<T: Instance> UarteTerminal<T> {
+    /// Creates a new UART terminal from a UARTE peripheral.
+    ///
+    /// Splits the UARTE into separate transmit and receive halves using
+    /// the static TX_BUF and RX_BUF buffers.
+    ///
+    /// # Arguments
+    ///
+    /// * `serial` - A configured UARTE peripheral
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use microbit::{Board, hal::uarte::{Baudrate, Parity, Uarte}};
+    /// use editline::terminals::microbit::UarteTerminal;
+    ///
+    /// let board = Board::take().unwrap();
+    /// let serial = Uarte::new(
+    ///     board.UARTE0,
+    ///     board.uart.into(),
+    ///     Parity::EXCLUDED,
+    ///     Baudrate::BAUD115200,
+    /// );
+    /// let terminal = UarteTerminal::new(serial);
+    /// ```
     pub fn new(serial: Uarte<T>) -> Self {
         let (tx, rx) = serial
             .split(unsafe { addr_of_mut!(TX_BUF).as_mut().unwrap() }, unsafe {
@@ -24,6 +78,11 @@ impl<T: Instance> UarteTerminal<T> {
         Self { tx, rx }
     }
 
+    /// Reads a single byte from UART, blocking until available.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the UART read operation fails.
     fn read_byte_blocking(&mut self) -> Result<u8> {
         let mut buf = [0u8];
         self.rx.read_exact(&mut buf).map_err(|_| Error::Io("UART read failed"))?;
@@ -162,7 +221,32 @@ impl<T: Instance> Terminal for UarteTerminal<T> {
     }
 }
 
-/// Helper function to create a UarteTerminal from the micro:bit board
+/// Creates a UART terminal from a micro:bit board.
+///
+/// Convenience function that configures the UARTE0 peripheral with standard
+/// settings (115200 baud, no parity) and returns a ready-to-use terminal.
+///
+/// # Arguments
+///
+/// * `board` - The micro:bit board obtained from [`Board::take()`]
+///
+/// # Examples
+///
+/// ```no_run
+/// use editline::terminals::microbit::{from_board, Board};
+/// use editline::LineEditor;
+///
+/// let board = Board::take().unwrap();
+/// let mut terminal = from_board(board);
+/// let mut editor = LineEditor::new(256, 20);
+///
+/// loop {
+///     match editor.read_line(&mut terminal) {
+///         Ok(line) => { /* process line */ }
+///         Err(_) => break,
+///     }
+/// }
+/// ```
 pub fn from_board(board: Board) -> UarteTerminal<microbit::pac::UARTE0> {
     let serial = Uarte::new(
         board.UARTE0,
