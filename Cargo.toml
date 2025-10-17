@@ -38,16 +38,11 @@ winapi = { version = "0.3", features = ["wincon", "winbase", "handleapi", "conso
 default = ["std"]
 std = ["libc", "winapi"]
 microbit = ["microbit-v2", "embedded-io", "cortex-m", "cortex-m-rt", "panic-halt", "alloc-cortex-m"]
-rp_pico = ["rp2040-hal", "rp2040-boot2", "fugit", "embedded-io", "cortex-m", "cortex-m-rt", "panic-halt", "alloc-cortex-m"]
 rp_pico_usb = ["rp2040-hal", "rp2040-boot2", "fugit", "usb-device", "usbd-serial", "cortex-m", "cortex-m-rt", "panic-halt", "alloc-cortex-m"]
 
 [[example]]
 name = "microbit_repl"
 required-features = ["microbit"]
-
-[[example]]
-name = "rp_pico_repl"
-required-features = ["rp_pico"]
 
 [[example]]
 name = "rp_pico_usb_repl"

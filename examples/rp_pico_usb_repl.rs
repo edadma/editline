@@ -20,6 +20,7 @@
 
 extern crate alloc;
 
+use core::ptr::addr_of_mut;
 use cortex_m_rt::entry;
 use panic_halt as _;
 use alloc_cortex_m::CortexMHeap;
@@ -92,7 +93,7 @@ fn main() -> ! {
         USB_BUS = Some(usb_bus);
     }
 
-    let usb_bus_ref = unsafe { USB_BUS.as_ref().unwrap() };
+    let usb_bus_ref = unsafe { (*addr_of_mut!(USB_BUS)).as_ref().unwrap() };
 
     // Set up the USB Communications Class Device driver
     let serial = SerialPort::new(usb_bus_ref);

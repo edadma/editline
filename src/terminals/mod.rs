@@ -5,8 +5,7 @@
 //! - **Unix/Linux**: [`StdioTerminal`] using termios and ANSI escape codes
 //! - **Windows**: [`StdioTerminal`] using the Windows Console API
 //! - **micro:bit v2**: [`UarteTerminal`] for UART-based serial communication
-//! - **Raspberry Pi Pico (UART)**: [`UartTerminal`] for UART-based serial communication
-//! - **Raspberry Pi Pico (USB)**: [`UsbCdcTerminal`] for USB CDC serial communication
+//! - **Raspberry Pi Pico (USB CDC)**: [`UsbCdcTerminal`] for USB CDC serial communication
 //!
 //! Each implementation handles platform-specific details like raw mode setup,
 //! key event parsing, and cursor control.
@@ -28,12 +27,6 @@ pub mod microbit;
 
 #[cfg(feature = "microbit")]
 pub use microbit::UarteTerminal;
-
-#[cfg(feature = "rp_pico")]
-pub mod rp_pico;
-
-#[cfg(feature = "rp_pico")]
-pub use rp_pico::UartTerminal;
 
 #[cfg(feature = "rp_pico_usb")]
 pub mod rp_pico_usb;
