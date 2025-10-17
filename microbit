@@ -1,0 +1,2 @@
+#!/bin/bash
+cargo build --example microbit_repl --target thumbv7em-none-eabihf --no-default-features --features microbit --release

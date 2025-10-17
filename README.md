@@ -42,11 +42,13 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-editline = "0.0.16"
+editline = "0.0.17"
 
-# For micro:bit support
+# For embedded platforms (micro:bit, Raspberry Pi Pico)
 [target.'cfg(target_os = "none")'.dependencies]
-editline = { version = "0.0.16", features = ["microbit"], default-features = false }
+editline = { version = "0.0.17", features = ["microbit"], default-features = false }
+# Or for Raspberry Pi Pico with USB CDC:
+editline = { version = "0.0.17", features = ["rp_pico_usb"], default-features = false }
 ```
 
 ### Basic REPL Example
@@ -186,7 +188,7 @@ Then use editline in your `Cargo.toml`:
 
 ```toml
 [dependencies]
-editline = { version = "0.0.16", default-features = false }
+editline = { version = "0.0.17", default-features = false }
 ```
 
 Try these features:
@@ -206,12 +208,13 @@ Try these features:
 - **Linux/Unix**: Uses termios for raw mode and ANSI escape sequences for cursor control
 - **Windows**: Uses Windows Console API for native terminal control
 - **micro:bit v2**: UART-based terminal with proper line endings (CRLF) for serial terminals
+- **Raspberry Pi Pico**: USB CDC (Communications Device Class) for virtual COM port over USB
 
 ### Platform-Specific Behavior
 
 **Line Endings:**
 - Unix/Linux/macOS: `\n` (LF)
-- micro:bit (serial terminals): `\r\n` (CRLF)
+- Embedded platforms (micro:bit, Raspberry Pi Pico): `\r\n` (CRLF)
 
 The library automatically handles platform-specific line endings through conditional compilation.
 
@@ -225,19 +228,33 @@ cargo run --example simple_repl
 
 **micro:bit v2:**
 ```bash
-# Requires nightly toolchain for build-std
-cargo +nightly build --release \
-    --target thumbv7em-none-eabihf \
-    --no-default-features \
-    --features microbit \
-    -Z build-std=core,alloc
+cargo build --example microbit_repl --target thumbv7em-none-eabihf \
+    --no-default-features --features microbit --release
 
-# With probe-rs runner configured:
-cargo +nightly run --release \
-    --target thumbv7em-none-eabihf \
-    --no-default-features \
-    --features microbit \
-    -Z build-std=core,alloc
+# Flash to micro:bit (when mounted at /media/$USER/MICROBIT)
+arm-none-eabi-objcopy -O ihex \
+    target/thumbv7em-none-eabihf/release/examples/microbit_repl \
+    /media/$USER/MICROBIT/microbit_repl.hex
+
+# Connect via serial
+picocom /dev/ttyACM0 -b 115200
+```
+
+**Raspberry Pi Pico (USB CDC):**
+```bash
+cargo build --example rp_pico_usb_repl --target thumbv6m-none-eabi \
+    --no-default-features --features rp_pico_usb --release
+
+# Convert to UF2 format
+elf2uf2-rs target/thumbv6m-none-eabi/release/examples/rp_pico_usb_repl \
+    target/thumbv6m-none-eabi/release/examples/rp_pico_usb_repl.uf2
+
+# Flash to Pico (when in BOOTSEL mode at /media/$USER/RPI-RP2)
+cp target/thumbv6m-none-eabi/release/examples/rp_pico_usb_repl.uf2 \
+    /media/$USER/RPI-RP2/
+
+# Connect via USB CDC
+picocom /dev/ttyACM0 -b 115200
 ```
 
 ## Architecture

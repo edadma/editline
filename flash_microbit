@@ -1,0 +1,18 @@
+#!/bin/bash
+set -e
+
+echo "Looking for mounted micro:bit..."
+if [ -d "/media/$USER/MICROBIT" ]; then
+    echo "Found micro:bit at /media/$USER/MICROBIT"
+    echo "Copying .hex file..."
+    arm-none-eabi-objcopy -O ihex target/thumbv7em-none-eabihf/release/examples/microbit_repl /media/$USER/MICROBIT/microbit_repl.hex
+    echo "Syncing filesystem..."
+    sync
+    echo "Done! The micro:bit should automatically reboot."
+    echo "Connect with: picocom /dev/ttyACM0 -b 115200"
+else
+    echo "micro:bit not found. Please:"
+    echo "1. Connect micro:bit via USB"
+    echo "2. Wait for it to mount"
+    echo "3. Run this script again"
+fi
