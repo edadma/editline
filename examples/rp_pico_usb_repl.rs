@@ -111,17 +111,17 @@ fn main() -> ! {
     let mut terminal = UsbCdcTerminal::new(usb_dev, serial);
     let mut editor = LineEditor::new(512, 50);  // 512 byte buffer, 50 history entries
 
-    // Wait a moment for the USB connection to establish
-    // (give the host time to enumerate the device)
-    cortex_m::asm::delay(12_000_000);  // ~1 second at 12MHz
+    // Wait for first byte from terminal (don't echo it - just use it as connection signal)
+    let _ = terminal.read_byte();
 
-    terminal.write(b"\r\n\r\n").ok();
-    terminal.write(b"Raspberry Pi Pico USB REPL with editline!\r\n").ok();
+    // Send banner now that we know terminal is connected
+    terminal.write(b"\r\n\r\nRaspberry Pi Pico USB REPL with editline!\r\n").ok();
     terminal.write(b"Features: full line editing, history, word navigation\r\n").ok();
     terminal.write(b"Commands:\r\n").ok();
     terminal.write(b"  exit - Exit the REPL\r\n").ok();
     terminal.write(b"  help - Show this help message\r\n").ok();
     terminal.write(b"\r\n").ok();
+    terminal.flush().ok();
 
     loop {
         terminal.write(b"pico> ").ok();

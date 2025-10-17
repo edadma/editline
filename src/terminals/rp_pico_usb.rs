@@ -80,6 +80,22 @@ impl<'a, B: usb_device::bus::UsbBus> UsbCdcTerminal<'a, B> {
             self.poll_usb();
         }
     }
+
+    /// Waits for USB to be configured and ready.
+    ///
+    /// This method blocks until the USB device reaches the `Configured` state.
+    /// Note: This happens during USB enumeration when the device is plugged in,
+    /// NOT when a terminal program connects to it.
+    pub fn wait_until_configured(&mut self) {
+        // Wait for USB to be configured
+        loop {
+            if self.usb_device.poll(&mut [&mut self.serial_port]) {
+                if self.usb_device.state() == UsbDeviceState::Configured {
+                    break;
+                }
+            }
+        }
+    }
 }
 
 impl<'a, B: usb_device::bus::UsbBus> Terminal for UsbCdcTerminal<'a, B> {
@@ -112,6 +128,10 @@ impl<'a, B: usb_device::bus::UsbBus> Terminal for UsbCdcTerminal<'a, B> {
 
     fn flush(&mut self) -> Result<()> {
         let _ = self.serial_port.flush();
+        // Poll USB several times to ensure data is transmitted
+        for _ in 0..10 {
+            self.poll_usb();
+        }
         Ok(())
     }
 
