@@ -1,36 +1,24 @@
-//! micro:bit v2 terminal implementation using UART.
+//! Raspberry Pi Pico terminal implementation using UART.
 //!
-//! This implementation provides a [`Terminal`](crate::Terminal) for the micro:bit v2
-//! development board, using the nRF52833's UARTE peripheral for serial communication
+//! This implementation provides a [`Terminal`](crate::Terminal) for the Raspberry Pi Pico
+//! development board, using the RP2040's UART0 peripheral for serial communication
 //! over USB at 115200 baud.
 //!
 //! # Examples
 //!
 //! ```no_run
-//! use editline::terminals::microbit::{from_board, Board};
+//! use editline::terminals::rp_pico::UartTerminal;
+//! use rp2040_hal::{uart::{UartPeripheral, DataBits, StopBits}, gpio::Pins};
 //!
-//! let board = Board::take().unwrap();
-//! let terminal = from_board(board);
+//! // Assuming you have configured pac, pins, and uart0...
+//! let terminal = UartTerminal::new(uart0);
 //! ```
 
-use core::ptr::addr_of_mut;
-use core::fmt::Write as FmtWrite;
-use core::result::Result::Ok;
-use embedded_io::Read as EmbeddedRead;
-pub use microbit::{Board, hal::uarte::{Baudrate, Parity, Uarte, UarteRx, UarteTx, Instance}};
+use embedded_io::{Read as EmbeddedRead, Write as EmbeddedWrite};
+pub use rp2040_hal::uart::{UartPeripheral, DataBits, StopBits, Enabled, UartDevice, ValidUartPinout};
 use crate::{Terminal, KeyEvent, Result, Error};
 
-/// Transmit buffer for UART operations.
-///
-/// Single-byte buffer used for non-blocking UART transmission.
-static mut TX_BUF: [u8; 1] = [0; 1];
-
-/// Receive buffer for UART operations.
-///
-/// Single-byte buffer used for UART reception.
-static mut RX_BUF: [u8; 1] = [0; 1];
-
-/// UART terminal implementation for micro:bit v2.
+/// UART terminal implementation for Raspberry Pi Pico.
 ///
 /// Provides serial communication at 115200 baud with support for ANSI escape
 /// sequences (arrow keys, cursor control). Designed for use with serial terminal
@@ -38,44 +26,35 @@ static mut RX_BUF: [u8; 1] = [0; 1];
 ///
 /// # Type Parameters
 ///
-/// * `T` - The UARTE instance type (typically `microbit::pac::UARTE0`)
-pub struct UarteTerminal<T: Instance> {
-    tx: UarteTx<T>,
-    rx: UarteRx<T>,
+/// * `D` - The UART device type (typically `rp2040_hal::pac::UART0` or `UART1`)
+/// * `P` - The pins type for TX/RX
+pub struct UartTerminal<D: UartDevice, P: ValidUartPinout<D>> {
+    uart: UartPeripheral<Enabled, D, P>,
 }
 
-impl<T: Instance> UarteTerminal<T> {
-    /// Creates a new UART terminal from a UARTE peripheral.
-    ///
-    /// Splits the UARTE into separate transmit and receive halves using
-    /// the static TX_BUF and RX_BUF buffers.
+impl<D: UartDevice, P: ValidUartPinout<D>> UartTerminal<D, P> {
+    /// Creates a new UART terminal from a configured UART peripheral.
     ///
     /// # Arguments
     ///
-    /// * `serial` - A configured UARTE peripheral
+    /// * `uart` - A configured UART peripheral
     ///
     /// # Examples
     ///
     /// ```no_run
-    /// use microbit::{Board, hal::uarte::{Baudrate, Parity, Uarte}};
-    /// use editline::terminals::microbit::UarteTerminal;
+    /// use rp2040_hal::{uart::{UartPeripheral, DataBits, StopBits}, clocks::ClocksManager};
+    /// use editline::terminals::rp_pico::UartTerminal;
     ///
-    /// let board = Board::take().unwrap();
-    /// let serial = Uarte::new(
-    ///     board.UARTE0,
-    ///     board.uart.into(),
-    ///     Parity::EXCLUDED,
-    ///     Baudrate::BAUD115200,
-    /// );
-    /// let terminal = UarteTerminal::new(serial);
+    /// // Assuming pac, pins, and clocks are set up...
+    /// let uart = UartPeripheral::new(pac.UART0, pins, &mut pac.RESETS)
+    ///     .enable(
+    ///         uart::common_configs::_115200_8_N_1,
+    ///         clocks.peripheral_clock.freq(),
+    ///     ).unwrap();
+    /// let terminal = UartTerminal::new(uart);
     /// ```
-    pub fn new(serial: Uarte<T>) -> Self {
-        let (tx, rx) = serial
-            .split(unsafe { addr_of_mut!(TX_BUF).as_mut().unwrap() }, unsafe {
-                addr_of_mut!(RX_BUF).as_mut().unwrap()
-            })
-            .unwrap();
-        Self { tx, rx }
+    pub fn new(uart: UartPeripheral<Enabled, D, P>) -> Self {
+        Self { uart }
     }
 
     /// Reads a single byte from UART, blocking until available.
@@ -85,24 +64,24 @@ impl<T: Instance> UarteTerminal<T> {
     /// Returns an error if the UART read operation fails.
     fn read_byte_blocking(&mut self) -> Result<u8> {
         let mut buf = [0u8];
-        self.rx.read_exact(&mut buf).map_err(|_| Error::Io("UART read failed"))?;
+        self.uart.read_exact(&mut buf).map_err(|_| Error::Io("UART read failed"))?;
         Ok(buf[0])
     }
 }
 
-impl<T: Instance> Terminal for UarteTerminal<T> {
+impl<D: UartDevice, P: ValidUartPinout<D>> Terminal for UartTerminal<D, P> {
     fn read_byte(&mut self) -> Result<u8> {
         self.read_byte_blocking()
     }
 
     fn write(&mut self, data: &[u8]) -> Result<()> {
-        self.tx.write_str(core::str::from_utf8(data).map_err(|_| Error::InvalidUtf8)?)
+        self.uart.write_all(data)
             .map_err(|_| Error::Io("UART write failed"))
     }
 
     fn flush(&mut self) -> Result<()> {
-        // UART on micro:bit doesn't buffer, so flush is a no-op
-        Ok(())
+        self.uart.flush()
+            .map_err(|_| Error::Io("UART flush failed"))
     }
 
     fn enter_raw_mode(&mut self) -> Result<()> {
@@ -144,7 +123,7 @@ impl<T: Instance> Terminal for UarteTerminal<T> {
         if c == 27 {
             // Try to read next byte for escape sequence (non-blocking)
             let mut buf = [0u8];
-            if self.rx.read(&mut buf).is_ok() {
+            if self.uart.read(&mut buf).is_ok() {
                 let c2 = buf[0];
 
                 // Alt+Backspace
@@ -166,6 +145,18 @@ impl<T: Instance> Terminal for UarteTerminal<T> {
                                 if let Ok(c4) = self.read_byte_blocking() {
                                     if c4 == b'~' {
                                         return Ok(KeyEvent::Delete);
+                                    }
+                                    // Ctrl+Delete is ESC[3;5~
+                                    if c4 == b';' {
+                                        if let Ok(c5) = self.read_byte_blocking() {
+                                            if c5 == b'5' {
+                                                if let Ok(c6) = self.read_byte_blocking() {
+                                                    if c6 == b'~' {
+                                                        return Ok(KeyEvent::CtrlDelete);
+                                                    }
+                                                }
+                                            }
+                                        }
                                     }
                                 }
                             }
@@ -219,40 +210,4 @@ impl<T: Instance> Terminal for UarteTerminal<T> {
         // Unknown/control character - treat as null
         Ok(KeyEvent::Normal('\0'))
     }
-}
-
-/// Creates a UART terminal from a micro:bit board.
-///
-/// Convenience function that configures the UARTE0 peripheral with standard
-/// settings (115200 baud, no parity) and returns a ready-to-use terminal.
-///
-/// # Arguments
-///
-/// * `board` - The micro:bit board obtained from [`Board::take()`]
-///
-/// # Examples
-///
-/// ```no_run
-/// use editline::terminals::microbit::{from_board, Board};
-/// use editline::LineEditor;
-///
-/// let board = Board::take().unwrap();
-/// let mut terminal = from_board(board);
-/// let mut editor = LineEditor::new(256, 20);
-///
-/// loop {
-///     match editor.read_line(&mut terminal) {
-///         Ok(line) => { /* process line */ }
-///         Err(_) => break,
-///     }
-/// }
-/// ```
-pub fn from_board(board: Board) -> UarteTerminal<microbit::pac::UARTE0> {
-    let serial = Uarte::new(
-        board.UARTE0,
-        board.uart.into(),
-        Parity::EXCLUDED,
-        Baudrate::BAUD115200,
-    );
-    UarteTerminal::new(serial)
 }

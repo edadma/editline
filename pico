@@ -1,0 +1,1 @@
+cargo build --example rp_pico_repl --target thumbv6m-none-eabi --no-default-features --features rp_pico --release

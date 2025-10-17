@@ -1,0 +1,2 @@
+#!/bin/bash
+cargo build --example rp_pico_usb_repl --target thumbv6m-none-eabi --no-default-features --features rp_pico_usb --release

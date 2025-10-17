@@ -1,10 +1,9 @@
+[target.thumbv6m-none-eabi]
+rustflags = [
+  "-C", "link-arg=-Tlink.x",
+]
+
 [target.thumbv7em-none-eabihf]
-runner = "probe-rs run --chip nRF52833_xxAA"
-rustflags = ["-C", "link-arg=-Tlink.x"]
-
-# Note: No [build] section with default target!
-# This allows both Linux and embedded builds to work.
-# For embedded builds, explicitly specify: --target thumbv7em-none-eabihf
-
-[unstable]
-build-std = ["core", "alloc"]
+rustflags = [
+  "-C", "link-arg=-Tlink.x",
+]

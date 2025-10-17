@@ -1,0 +1,22 @@
+#!/bin/bash
+set -e
+
+echo "Converting ELF to UF2..."
+elf2uf2-rs target/thumbv6m-none-eabi/release/examples/rp_pico_usb_repl target/thumbv6m-none-eabi/release/examples/rp_pico_usb_repl.uf2
+
+echo "Looking for mounted Pico..."
+if [ -d "/media/$USER/RPI-RP2" ]; then
+    echo "Found Pico at /media/$USER/RPI-RP2"
+    echo "Copying UF2 file..."
+    cp target/thumbv6m-none-eabi/release/examples/rp_pico_usb_repl.uf2 /media/$USER/RPI-RP2/
+    echo "Syncing filesystem..."
+    sync
+    echo "Done! The Pico should automatically reboot and unmount."
+    echo "Wait a few seconds, then connect with: picocom /dev/ttyACM0 -b 115200"
+else
+    echo "Pico not found. Please:"
+    echo "1. Hold BOOTSEL button on Pico"
+    echo "2. Plug in USB cable"
+    echo "3. Release BOOTSEL button"
+    echo "4. Run this script again"
+fi

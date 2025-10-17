@@ -17,7 +17,16 @@ path = "src/lib.rs"
 
 [dependencies]
 microbit-v2 = { version = "0.15", optional = true }
+rp2040-hal = { version = "0.10", features = ["rt", "critical-section-impl"], optional = true }
+rp2040-boot2 = { version = "0.3", optional = true }
+fugit = { version = "0.3", optional = true }
+cortex-m = { version = "0.7", optional = true }
+cortex-m-rt = { version = "0.7", optional = true }
+panic-halt = { version = "0.2", optional = true }
+alloc-cortex-m = { version = "0.4", optional = true }
 embedded-io = { version = "0.6", optional = true }
+usb-device = { version = "0.3", optional = true }
+usbd-serial = { version = "0.2", optional = true }
 
 [target.'cfg(all(unix, not(target_os = "none")))'.dependencies]
 libc = { version = "0.2", optional = true }
@@ -28,25 +37,28 @@ winapi = { version = "0.3", features = ["wincon", "winbase", "handleapi", "conso
 [features]
 default = ["std"]
 std = ["libc", "winapi"]
-microbit = ["microbit-v2", "embedded-io"]
+microbit = ["microbit-v2", "embedded-io", "cortex-m", "cortex-m-rt", "panic-halt", "alloc-cortex-m"]
+rp_pico = ["rp2040-hal", "rp2040-boot2", "fugit", "embedded-io", "cortex-m", "cortex-m-rt", "panic-halt", "alloc-cortex-m"]
+rp_pico_usb = ["rp2040-hal", "rp2040-boot2", "fugit", "usb-device", "usbd-serial", "cortex-m", "cortex-m-rt", "panic-halt", "alloc-cortex-m"]
 
 [[example]]
 name = "microbit_repl"
-required-features = []
+required-features = ["microbit"]
+
+[[example]]
+name = "rp_pico_repl"
+required-features = ["rp_pico"]
+
+[[example]]
+name = "rp_pico_usb_repl"
+required-features = ["rp_pico_usb"]
 
 [profile.dev]
 opt-level = 1
 panic = "abort"
 
 [profile.release]
-opt-level = "z"
+opt-level = "s"
 lto = true
 panic = "abort"
 
-[target.'cfg(target_arch = "arm")'.dev-dependencies]
-cortex-m = "0.7"
-cortex-m-rt = "0.7"
-panic-halt = "0.2"
-microbit-v2 = "0.15"
-alloc-cortex-m = "0.4"
-embedded-io = "0.6"
