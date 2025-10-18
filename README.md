@@ -42,13 +42,13 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-editline = "0.0.17"
+editline = "0.0.18"
 
 # For embedded platforms (micro:bit, Raspberry Pi Pico)
 [target.'cfg(target_os = "none")'.dependencies]
-editline = { version = "0.0.17", features = ["microbit"], default-features = false }
+editline = { version = "0.0.18", features = ["microbit"], default-features = false }
 # Or for Raspberry Pi Pico with USB CDC:
-editline = { version = "0.0.17", features = ["rp_pico_usb"], default-features = false }
+editline = { version = "0.0.18", features = ["rp_pico_usb"], default-features = false }
 ```
 
 ### Basic REPL Example
@@ -188,7 +188,7 @@ Then use editline in your `Cargo.toml`:
 
 ```toml
 [dependencies]
-editline = { version = "0.0.17", default-features = false }
+editline = { version = "0.0.18", default-features = false }
 ```
 
 Try these features:

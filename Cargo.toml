@@ -1,6 +1,6 @@
 [package]
 name = "editline"
-version = "0.0.17"
+version = "0.0.18"
 edition = "2021"
 rust-version = "1.56"
 authors = ["Ed"]
@@ -32,7 +32,7 @@ usbd-serial = { version = "0.2", optional = true }
 libc = { version = "0.2", optional = true }
 
 [target.'cfg(all(windows, not(target_os = "none")))'.dependencies]
-winapi = { version = "0.3", features = ["wincon", "winbase", "handleapi", "consoleapi", "processenv"], optional = true }
+winapi = { version = "0.3", features = ["wincon", "winbase", "handleapi", "consoleapi", "processenv", "wincontypes", "winuser"], optional = true }
 
 [features]
 default = ["std"]
