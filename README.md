@@ -11,8 +11,9 @@ A platform-agnostic line editor library for Rust with full editing capabilities,
 `editline` provides a powerful, flexible line editing library with a clean separation between I/O and editing logic. Unlike traditional readline implementations that are tightly coupled to specific terminal APIs, `editline` uses a trait-based design that works with any byte-stream I/O.
 
 **Perfect for:**
-- Desktop CLIs and REPLs
-- Embedded systems (UART, custom displays)
+- Desktop CLIs and REPLs (Linux, macOS, Windows)
+- Embedded systems (UART, USB CDC, custom displays)
+- ESP32-S3 and other RTOS-based microcontrollers
 - Network services (telnet/SSH servers)
 - Custom terminal emulators
 - Testing with mock I/O
@@ -32,7 +33,7 @@ A platform-agnostic line editor library for Rust with full editing capabilities,
 - **Word-aware navigation**: Ctrl+Left/Right, Alt+Backspace, Ctrl+Delete
 - **Command history**: 50-entry circular buffer with up/down navigation
 - **Smart history**: Automatically skips duplicates and empty lines
-- **Cross-platform**: Unix (termios/ANSI) and Windows (Console API)
+- **Cross-platform**: Unix, Windows, micro:bit v2, Raspberry Pi Pico, ESP32-S3
 - **Zero global state**: All state is explicitly managed
 - **Type-safe**: Strong typing with Result-based error handling
 
@@ -44,11 +45,15 @@ Add to your `Cargo.toml`:
 [dependencies]
 editline = "0.0.18"
 
-# For embedded platforms (micro:bit, Raspberry Pi Pico)
+# For embedded platforms
 [target.'cfg(target_os = "none")'.dependencies]
+# micro:bit v2 (nRF52833):
 editline = { version = "0.0.18", features = ["microbit"], default-features = false }
-# Or for Raspberry Pi Pico with USB CDC:
+# Raspberry Pi Pico (RP2040) with USB CDC:
 editline = { version = "0.0.18", features = ["rp_pico_usb"], default-features = false }
+
+# For ESP32-S3 (with ESP-IDF)
+editline = { version = "0.0.18", features = ["esp32"] }
 ```
 
 ### Basic REPL Example
@@ -209,12 +214,14 @@ Try these features:
 - **Windows**: Uses Windows Console API for native terminal control
 - **micro:bit v2**: UART-based terminal with proper line endings (CRLF) for serial terminals
 - **Raspberry Pi Pico**: USB CDC (Communications Device Class) for virtual COM port over USB
+- **ESP32-S3**: USB Serial/JTAG interface using ESP-IDF for RTOS-based embedded systems
 
 ### Platform-Specific Behavior
 
 **Line Endings:**
 - Unix/Linux/macOS: `\n` (LF)
-- Embedded platforms (micro:bit, Raspberry Pi Pico): `\r\n` (CRLF)
+- Windows: `\r\n` (CRLF) - handled by Console API
+- Embedded platforms (micro:bit, Raspberry Pi Pico, ESP32): `\r\n` (CRLF) for serial terminals
 
 The library automatically handles platform-specific line endings through conditional compilation.
 
@@ -255,6 +262,16 @@ cp target/thumbv6m-none-eabi/release/examples/rp_pico_usb_repl.uf2 \
 
 # Connect via USB CDC
 picocom /dev/ttyACM0 -b 115200
+```
+
+**ESP32-S3:**
+
+See `examples/ESP32_README.md` for detailed instructions. Quick start:
+
+```bash
+# In an ESP32 project created with cargo generate
+cargo build --release
+cargo espflash flash --monitor
 ```
 
 ## Architecture

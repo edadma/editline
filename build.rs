@@ -5,9 +5,16 @@ use std::path::PathBuf;
 fn main() {
     let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
     let target = env::var("TARGET").unwrap();
-    
+
     println!("cargo:rerun-if-changed=build.rs");
-    
+
+    // Handle ESP-IDF builds
+    // Only run embuild for actual ESP targets, not for standard builds with esp32 feature
+    #[cfg(feature = "esp32")]
+    if target.contains("espidf") {
+        embuild::espidf::sysenv::output();
+    }
+
     // Only provide memory.x for ARM Cortex-M targets
     if target.starts_with("thumbv") {
         let memory_x = if target == "thumbv6m-none-eabi" {

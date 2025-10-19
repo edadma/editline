@@ -6,6 +6,7 @@
 //! - **Windows**: [`StdioTerminal`] using the Windows Console API
 //! - **micro:bit v2**: [`UarteTerminal`] for UART-based serial communication
 //! - **Raspberry Pi Pico (USB CDC)**: [`UsbCdcTerminal`] for USB CDC serial communication
+//! - **ESP32-S3**: [`UsbSerialJtagTerminal`] for USB Serial/JTAG communication
 //!
 //! Each implementation handles platform-specific details like raw mode setup,
 //! key event parsing, and cursor control.
@@ -33,3 +34,9 @@ pub mod rp_pico_usb;
 
 #[cfg(feature = "rp_pico_usb")]
 pub use rp_pico_usb::UsbCdcTerminal;
+
+#[cfg(feature = "esp32")]
+pub mod esp32;
+
+#[cfg(feature = "esp32")]
+pub use esp32::UsbSerialJtagTerminal;
