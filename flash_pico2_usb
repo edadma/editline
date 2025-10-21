@@ -1,0 +1,19 @@
+#!/bin/bash
+set -e
+
+echo "Looking for mounted Pico 2..."
+if [ -d "/media/$USER/RP2350" ]; then
+    echo "Found Pico 2 at /media/$USER/RP2350"
+    echo "Copying UF2 file..."
+    cp target/thumbv8m.main-none-eabihf/release/examples/rp_pico2_usb_repl.uf2 /media/$USER/RP2350/
+    echo "Syncing filesystem..."
+    sync
+    echo "Done! The Pico 2 should automatically reboot and unmount."
+    echo "Wait a few seconds, then connect with: picocom /dev/ttyACM0 -b 115200"
+else
+    echo "Pico 2 not found. Please:"
+    echo "1. Hold BOOTSEL button on Pico 2"
+    echo "2. Plug in USB cable"
+    echo "3. Release BOOTSEL button"
+    echo "4. Run this script again"
+fi

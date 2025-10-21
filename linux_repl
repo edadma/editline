@@ -1,0 +1,7 @@
+#!/bin/bash
+# Run script for Linux REPL example
+
+set -e
+
+echo "Building and running Linux REPL example..."
+cargo run --example simple_repl

@@ -1,0 +1,33 @@
+#!/bin/bash
+# Build script for Raspberry Pi Pico 2 (RP2350) USB CDC example
+
+set -e
+
+echo "Building Pico 2 USB CDC REPL example..."
+cargo build --example rp_pico2_usb_repl \
+    --target thumbv8m.main-none-eabihf \
+    --no-default-features \
+    --features rp_pico2_usb \
+    --release
+
+echo "Converting to UF2 format..."
+cp target/thumbv8m.main-none-eabihf/release/examples/rp_pico2_usb_repl \
+   target/thumbv8m.main-none-eabihf/release/examples/rp_pico2_usb_repl.elf
+picotool uf2 convert --family rp2350-arm-s \
+    target/thumbv8m.main-none-eabihf/release/examples/rp_pico2_usb_repl.elf \
+    target/thumbv8m.main-none-eabihf/release/examples/rp_pico2_usb_repl.uf2
+
+echo ""
+echo "Build successful!"
+echo "Binary size:"
+arm-none-eabi-size target/thumbv8m.main-none-eabihf/release/examples/rp_pico2_usb_repl
+
+echo ""
+echo "To flash to Pico 2:"
+echo "  1. Run: ./flash_pico2_usb"
+echo "  2. Or manually:"
+echo "     - Hold BOOTSEL button and plug in Pico 2"
+echo "     - Copy target/thumbv8m.main-none-eabihf/release/examples/rp_pico2_usb_repl.uf2 to the mounted drive"
+echo ""
+echo "To connect:"
+echo "  picocom /dev/ttyACM0 -b 115200"

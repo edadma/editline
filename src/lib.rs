@@ -1003,7 +1003,7 @@ impl LineEditor {
 }
 
 // Re-export terminal implementations
-#[cfg(any(feature = "std", feature = "microbit", feature = "rp_pico_usb"))]
+#[cfg(any(feature = "std", feature = "microbit", feature = "rp_pico_usb", feature = "rp_pico2_usb"))]
 pub mod terminals;
 
 #[cfg(test)]
