@@ -29,10 +29,10 @@ A platform-agnostic line editor library for Rust with full editing capabilities,
 ## Features
 
 - **Full line editing**: Insert, delete, cursor movement
-- **Word-aware navigation**: Ctrl+Left/Right, Alt+Backspace, Ctrl+Delete
+- **Word-aware navigation**: Ctrl+Left/Right, Alt+Backspace, Ctrl+Delete (treats symbols like `+`, `-` as separate words)
 - **Command history**: 50-entry circular buffer with up/down navigation
 - **Smart history**: Automatically skips duplicates and empty lines
-- **Cross-platform**: Unix (termios/ANSI) and Windows (Console API)
+- **Cross-platform**: Unix (termios/ANSI), Windows (Console API), and embedded systems
 - **Zero global state**: All state is explicitly managed
 - **Type-safe**: Strong typing with Result-based error handling
 
@@ -42,13 +42,15 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-editline = "0.0.18"
+editline = "0.0.19"
 
 # For embedded platforms (micro:bit, Raspberry Pi Pico)
 [target.'cfg(target_os = "none")'.dependencies]
-editline = { version = "0.0.18", features = ["microbit"], default-features = false }
+editline = { version = "0.0.19", features = ["microbit"], default-features = false }
 # Or for Raspberry Pi Pico with USB CDC:
-editline = { version = "0.0.18", features = ["rp_pico_usb"], default-features = false }
+editline = { version = "0.0.19", features = ["rp_pico_usb"], default-features = false }
+# Or for Raspberry Pi Pico 2 (RP2350) with USB CDC:
+editline = { version = "0.0.19", features = ["rp_pico2_usb"], default-features = false }
 ```
 
 ### Basic REPL Example
@@ -188,7 +190,7 @@ Then use editline in your `Cargo.toml`:
 
 ```toml
 [dependencies]
-editline = { version = "0.0.18", default-features = false }
+editline = { version = "0.0.19", default-features = false }
 ```
 
 Try these features:
@@ -208,7 +210,8 @@ Try these features:
 - **Linux/Unix**: Uses termios for raw mode and ANSI escape sequences for cursor control
 - **Windows**: Uses Windows Console API for native terminal control
 - **micro:bit v2**: UART-based terminal with proper line endings (CRLF) for serial terminals
-- **Raspberry Pi Pico**: USB CDC (Communications Device Class) for virtual COM port over USB
+- **Raspberry Pi Pico (RP2040)**: USB CDC (Communications Device Class) for virtual COM port over USB
+- **Raspberry Pi Pico 2 (RP2350)**: USB CDC with DTR-based connection detection for reliable operation
 
 ### Platform-Specific Behavior
 
@@ -240,7 +243,7 @@ arm-none-eabi-objcopy -O ihex \
 picocom /dev/ttyACM0 -b 115200
 ```
 
-**Raspberry Pi Pico (USB CDC):**
+**Raspberry Pi Pico (RP2040 USB CDC):**
 ```bash
 cargo build --example rp_pico_usb_repl --target thumbv6m-none-eabi \
     --no-default-features --features rp_pico_usb --release
@@ -252,6 +255,24 @@ elf2uf2-rs target/thumbv6m-none-eabi/release/examples/rp_pico_usb_repl \
 # Flash to Pico (when in BOOTSEL mode at /media/$USER/RPI-RP2)
 cp target/thumbv6m-none-eabi/release/examples/rp_pico_usb_repl.uf2 \
     /media/$USER/RPI-RP2/
+
+# Connect via USB CDC
+picocom /dev/ttyACM0 -b 115200
+```
+
+**Raspberry Pi Pico 2 (RP2350 USB CDC):**
+```bash
+cargo build --example rp_pico2_usb_repl --target thumbv8m.main-none-eabihf \
+    --no-default-features --features rp_pico2_usb --release
+
+# Convert to UF2 format (requires picotool for correct family ID)
+picotool uf2 convert --family rp2350-arm-s \
+    target/thumbv8m.main-none-eabihf/release/examples/rp_pico2_usb_repl \
+    target/thumbv8m.main-none-eabihf/release/examples/rp_pico2_usb_repl.uf2
+
+# Flash to Pico 2 (when in BOOTSEL mode at /media/$USER/RP2350)
+cp target/thumbv8m.main-none-eabihf/release/examples/rp_pico2_usb_repl.uf2 \
+    /media/$USER/RP2350/
 
 # Connect via USB CDC
 picocom /dev/ttyACM0 -b 115200

@@ -4,9 +4,9 @@
 //!
 //! - **Unix/Linux**: [`StdioTerminal`] using termios and ANSI escape codes
 //! - **Windows**: [`StdioTerminal`] using the Windows Console API
-//! - **micro:bit v2**: [`UarteTerminal`] for UART-based serial communication
-//! - **Raspberry Pi Pico (RP2040 USB CDC)**: [`UsbCdcTerminal`] for USB CDC serial communication
-//! - **Raspberry Pi Pico 2 (RP2350 USB CDC)**: [`UsbCdcTerminal`] for USB CDC serial communication
+//! - **micro:bit v2**: `UarteTerminal` for UART-based serial communication
+//! - **Raspberry Pi Pico (RP2040 USB CDC)**: `UsbCdcTerminal` for USB CDC serial communication
+//! - **Raspberry Pi Pico 2 (RP2350 USB CDC)**: `UsbCdcTerminal` for USB CDC serial communication
 //!
 //! Each implementation handles platform-specific details like raw mode setup,
 //! key event parsing, and cursor control.

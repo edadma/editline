@@ -464,20 +464,27 @@ impl LineBuffer {
 
         let mut pos = self.cursor_pos;
 
-        // If we're on a word char, skip to start of current word
-        if pos > 0 && is_word_char(self.buffer[pos - 1]) {
-            while pos > 0 && is_word_char(self.buffer[pos - 1]) {
-                pos -= 1;
+        // Skip any trailing whitespace first
+        while pos > 0 && is_whitespace(self.buffer[pos - 1]) {
+            pos -= 1;
+        }
+
+        if pos == 0 {
+            return 0;
+        }
+
+        // Now we're on a non-whitespace character
+        // Skip characters of the same type (word chars or symbols)
+        let is_word = is_word_char(self.buffer[pos - 1]);
+        while pos > 0 {
+            let c = self.buffer[pos - 1];
+            if is_whitespace(c) {
+                break;
             }
-        } else {
-            // Skip non-word chars
-            while pos > 0 && !is_word_char(self.buffer[pos - 1]) {
-                pos -= 1;
+            if is_word != is_word_char(c) {
+                break;
             }
-            // Then skip word chars
-            while pos > 0 && is_word_char(self.buffer[pos - 1]) {
-                pos -= 1;
-            }
+            pos -= 1;
         }
 
         pos
@@ -491,15 +498,21 @@ impl LineBuffer {
 
         let mut pos = self.cursor_pos;
 
-        // If on word char, skip to end of current word
-        if pos < self.buffer.len() && is_word_char(self.buffer[pos]) {
-            while pos < self.buffer.len() && is_word_char(self.buffer[pos]) {
-                pos += 1;
+        // Skip characters of the same type (word chars or symbols)
+        let is_word = is_word_char(self.buffer[pos]);
+        while pos < self.buffer.len() {
+            let c = self.buffer[pos];
+            if is_whitespace(c) {
+                break;
             }
+            if is_word != is_word_char(c) {
+                break;
+            }
+            pos += 1;
         }
 
-        // Skip non-word chars
-        while pos < self.buffer.len() && !is_word_char(self.buffer[pos]) {
+        // Skip whitespace
+        while pos < self.buffer.len() && is_whitespace(self.buffer[pos]) {
             pos += 1;
         }
 
@@ -509,6 +522,9 @@ impl LineBuffer {
     /// Moves the cursor to the start of the previous word.
     ///
     /// Words are defined as sequences of alphanumeric characters and underscores.
+    /// Symbols (like `+`, `-`, `*`) are treated as separate words. Only whitespace
+    /// is skipped when navigating between words.
+    ///
     /// Returns the number of positions the cursor moved.
     pub fn move_cursor_word_left(&mut self) -> usize {
         let target = self.find_word_start_left();
@@ -520,6 +536,9 @@ impl LineBuffer {
     /// Moves the cursor to the start of the next word.
     ///
     /// Words are defined as sequences of alphanumeric characters and underscores.
+    /// Symbols (like `+`, `-`, `*`) are treated as separate words. Only whitespace
+    /// is skipped when navigating between words.
+    ///
     /// Returns the number of positions the cursor moved.
     pub fn move_cursor_word_right(&mut self) -> usize {
         let target = self.find_word_start_right();
@@ -572,9 +591,14 @@ impl LineBuffer {
     }
 }
 
-/// Check if a byte is a word character
+/// Check if a byte is a word character (alphanumeric or underscore).
 fn is_word_char(c: u8) -> bool {
     c.is_ascii_alphanumeric() || c == b'_'
+}
+
+/// Check if a byte is whitespace (space or tab).
+fn is_whitespace(c: u8) -> bool {
+    c == b' ' || c == b'\t'
 }
 
 /// Command history manager with circular buffer storage.
@@ -1126,6 +1150,52 @@ mod tests {
         buf.insert_char('x');
         assert_eq!(buf.as_str().unwrap(), "hxe");
         assert_eq!(buf.cursor_pos(), 2);
+    }
+
+    #[test]
+    fn test_word_navigation_with_symbols() {
+        let mut buf = LineBuffer::new(100);
+        for c in "3 + 5".chars() {
+            buf.insert_char(c);
+        }
+        // Cursor at end: "3 + 5|"
+
+        // Move left by word - should stop at '5'
+        buf.move_cursor_word_left();
+        assert_eq!(buf.cursor_pos(), 4); // Before '5'
+
+        // Move left by word - should stop at '+'
+        buf.move_cursor_word_left();
+        assert_eq!(buf.cursor_pos(), 2); // Before '+'
+
+        // Move left by word - should stop at '3'
+        buf.move_cursor_word_left();
+        assert_eq!(buf.cursor_pos(), 0); // Before '3'
+
+        // Move right by word - should stop after '3'
+        buf.move_cursor_word_right();
+        assert_eq!(buf.cursor_pos(), 2); // After '3 ', before '+'
+
+        // Move right by word - should stop after '+'
+        buf.move_cursor_word_right();
+        assert_eq!(buf.cursor_pos(), 4); // After '+ ', before '5'
+    }
+
+    #[test]
+    fn test_delete_word_with_symbols() {
+        let mut buf = LineBuffer::new(100);
+        for c in "3 + 5".chars() {
+            buf.insert_char(c);
+        }
+        // Cursor at end: "3 + 5|"
+
+        // Delete word left - should delete '5'
+        buf.delete_word_left();
+        assert_eq!(buf.as_str().unwrap(), "3 + ");
+
+        // Delete word left - should delete '+'
+        buf.delete_word_left();
+        assert_eq!(buf.as_str().unwrap(), "3 ");
     }
 
     // History tests
