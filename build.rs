@@ -29,14 +29,29 @@ SECTIONS {
 } INSERT BEFORE .text;
 "#
         } else if target == "thumbv7em-none-eabihf" {
-            // micro:bit v2 (nRF52833)
-            r#"
+            // Both micro:bit v2 (nRF52833) and STM32H753ZI use this target
+            // Distinguish by checking feature flags
+            if env::var("CARGO_FEATURE_STM32H753ZI").is_ok() {
+                // STM32H753ZI
+                r#"
+MEMORY
+{
+  /* STM32H753ZI has 2MB Flash and 1MB RAM total */
+  /* Using DTCM RAM at 0x24000000 (512KB, fastest access) */
+  FLASH : ORIGIN = 0x08000000, LENGTH = 2048K
+  RAM : ORIGIN = 0x24000000, LENGTH = 512K
+}
+"#
+            } else {
+                // micro:bit v2 (nRF52833) - default when no stm32h753zi feature
+                r#"
 MEMORY
 {
   FLASH : ORIGIN = 0x00000000, LENGTH = 512K
   RAM : ORIGIN = 0x20000000, LENGTH = 128K
 }
 "#
+            }
         } else if target == "thumbv8m.main-none-eabihf" {
             // RP Pico 2 (RP2350)
             // Critical: Must place .start_block within first 4KB for boot ROM

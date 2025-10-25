@@ -1,0 +1,16 @@
+#!/bin/bash
+set -e
+
+# Build the example first
+./build-stm32
+
+echo ""
+echo "Flashing to STM32H753ZI..."
+
+# Flash and reset
+probe-rs download --chip STM32H753ZITx --binary-format Elf target/thumbv7em-none-eabihf/release/examples/stm32h753zi_usb_repl
+probe-rs reset --chip STM32H753ZITx
+
+echo ""
+echo "Firmware flashed successfully. Program is running on the board."
+echo "Connect with: tio /dev/ttyACM1"

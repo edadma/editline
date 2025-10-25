@@ -29,6 +29,14 @@ embedded-io = { version = "0.6", optional = true }
 embedded-hal = { version = "1.0", optional = true }
 usb-device = { version = "0.3", optional = true }
 usbd-serial = { version = "0.2", optional = true }
+embassy-time = { version = "0.5.0", optional = true }
+embassy-usb = { version = "0.5.1", optional = true }
+embassy-stm32 = { version = "0.4.0", features = ["time-driver-any", "exti", "memory-x"], optional = true }
+embassy-executor = { version = "0.9.0", features = ["arch-cortex-m", "executor-thread"], optional = true }
+embassy-futures = { version = "0.1.0", optional = true }
+defmt = { version = "0.3", optional = true }
+defmt-rtt = { version = "0.4", optional = true }
+panic-probe = { version = "0.3", features = ["print-defmt"], optional = true }
 
 [target.'cfg(all(unix, not(target_os = "none")))'.dependencies]
 libc = { version = "0.2", optional = true }
@@ -37,11 +45,15 @@ libc = { version = "0.2", optional = true }
 winapi = { version = "0.3", features = ["wincon", "winbase", "handleapi", "consoleapi", "processenv", "wincontypes", "winuser"], optional = true }
 
 [features]
-default = ["std"]
-std = ["libc", "winapi"]
-microbit = ["microbit-v2", "embedded-io", "cortex-m", "cortex-m-rt", "panic-halt", "alloc-cortex-m"]
-rp_pico_usb = ["rp2040-hal", "rp2040-boot2", "fugit", "usb-device", "usbd-serial", "cortex-m", "cortex-m-rt", "panic-halt", "alloc-cortex-m"]
-rp_pico2_usb = ["rp235x-hal", "fugit", "usb-device", "usbd-serial", "cortex-m", "panic-halt", "alloc-cortex-m", "embedded-hal"]
+default = ["sync", "std"]
+sync = []
+async = []
+std = ["libc", "winapi", "sync"]
+microbit = ["microbit-v2", "embedded-io", "cortex-m", "cortex-m-rt", "panic-halt", "alloc-cortex-m", "sync"]
+rp_pico_usb = ["rp2040-hal", "rp2040-boot2", "fugit", "usb-device", "usbd-serial", "cortex-m", "cortex-m-rt", "panic-halt", "alloc-cortex-m", "sync"]
+rp_pico2_usb = ["rp235x-hal", "fugit", "usb-device", "usbd-serial", "cortex-m", "panic-halt", "alloc-cortex-m", "embedded-hal", "sync"]
+embassy_usb = ["embassy-time", "embassy-usb", "defmt", "async"]
+stm32h753zi = ["embassy_usb", "embassy-stm32/stm32h753zi", "embassy-executor", "embassy-futures", "cortex-m/critical-section-single-core", "cortex-m-rt", "defmt-rtt", "panic-probe", "alloc-cortex-m"]
 
 [[example]]
 name = "microbit_repl"
@@ -55,6 +67,10 @@ required-features = ["rp_pico_usb"]
 name = "rp_pico2_usb_repl"
 required-features = ["rp_pico2_usb"]
 
+[[example]]
+name = "stm32h753zi_usb_repl"
+required-features = ["stm32h753zi"]
+
 [profile.dev]
 opt-level = 1
 panic = "abort"
@@ -63,4 +79,5 @@ panic = "abort"
 opt-level = "s"
 lto = true
 panic = "abort"
+debug = 2
 

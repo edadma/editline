@@ -40,3 +40,9 @@ pub mod rp_pico2_usb;
 
 #[cfg(feature = "rp_pico2_usb")]
 pub use rp_pico2_usb::UsbCdcTerminal;
+
+#[cfg(feature = "embassy_usb")]
+pub mod embassy_usb;
+
+#[cfg(feature = "embassy_usb")]
+pub use embassy_usb::EmbassyUsbTerminal;

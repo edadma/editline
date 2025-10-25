@@ -1,0 +1,13 @@
+#!/bin/bash
+set -e
+
+# Build the STM32H753ZI USB REPL example
+echo "Building STM32H753ZI USB REPL example..."
+cargo build \
+    --example stm32h753zi_usb_repl \
+    --no-default-features \
+    --features stm32h753zi \
+    --release \
+    --target thumbv7em-none-eabihf
+
+echo "Build complete! Binary at: target/thumbv7em-none-eabihf/release/examples/stm32h753zi_usb_repl"
