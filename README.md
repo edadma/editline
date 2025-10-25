@@ -33,6 +33,7 @@ A platform-agnostic line editor library for Rust with full editing capabilities,
 - **Command history**: 50-entry circular buffer with up/down navigation
 - **Smart history**: Automatically skips duplicates and empty lines
 - **Cross-platform**: Unix (termios/ANSI), Windows (Console API), and embedded systems
+- **Async support**: AsyncLineEditor for Embassy and other async runtimes
 - **Zero global state**: All state is explicitly managed
 - **Type-safe**: Strong typing with Result-based error handling
 
@@ -42,15 +43,18 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-editline = "0.0.19"
+editline = "0.0.20"
 
-# For embedded platforms (micro:bit, Raspberry Pi Pico)
+# For embedded platforms
 [target.'cfg(target_os = "none")'.dependencies]
-editline = { version = "0.0.19", features = ["microbit"], default-features = false }
-# Or for Raspberry Pi Pico with USB CDC:
-editline = { version = "0.0.19", features = ["rp_pico_usb"], default-features = false }
-# Or for Raspberry Pi Pico 2 (RP2350) with USB CDC:
-editline = { version = "0.0.19", features = ["rp_pico2_usb"], default-features = false }
+# micro:bit v2 (nRF52833):
+editline = { version = "0.0.20", features = ["microbit"], default-features = false }
+# Raspberry Pi Pico (RP2040) with USB CDC:
+editline = { version = "0.0.20", features = ["rp_pico_usb"], default-features = false }
+# Raspberry Pi Pico 2 (RP2350) with USB CDC:
+editline = { version = "0.0.20", features = ["rp_pico2_usb"], default-features = false }
+# STM32H753ZI with Embassy async USB CDC:
+editline = { version = "0.0.20", features = ["stm32h753zi"], default-features = false }
 ```
 
 ### Basic REPL Example
@@ -190,7 +194,7 @@ Then use editline in your `Cargo.toml`:
 
 ```toml
 [dependencies]
-editline = { version = "0.0.19", default-features = false }
+editline = { version = "0.0.20", default-features = false }
 ```
 
 Try these features:
