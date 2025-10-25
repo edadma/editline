@@ -6,7 +6,6 @@ use embassy_futures::join::join;
 use embassy_stm32::gpio::{Level, Output, Speed};
 use embassy_stm32::usb::Driver;
 use embassy_stm32::{bind_interrupts, peripherals, usb, Config};
-use embassy_time::Timer;
 use embassy_usb::class::cdc_acm::{CdcAcmClass, State};
 use embassy_usb::Builder;
 use editline::{AsyncLineEditor, AsyncTerminal, terminals::EmbassyUsbTerminal};
@@ -33,6 +32,7 @@ async fn main(_spawner: Spawner) {
         use core::mem::MaybeUninit;
         const HEAP_SIZE: usize = 32768;
         static mut HEAP: [MaybeUninit<u8>; HEAP_SIZE] = [MaybeUninit::uninit(); HEAP_SIZE];
+        #[allow(static_mut_refs)]
         unsafe { ALLOCATOR.init(HEAP.as_ptr() as usize, HEAP_SIZE) }
     }
 
