@@ -2,7 +2,7 @@
 set -e
 
 # Build the example first
-./build-stm32
+./stm32
 
 echo ""
 echo "Flashing to STM32H753ZI..."

@@ -3,6 +3,8 @@
 //! This module provides the async version of the line editor,
 //! suitable for async runtimes like Embassy on embedded systems.
 
+#![allow(async_fn_in_trait)]
+
 use crate::{Result, KeyEvent, LineBuffer, History};
 use alloc::string::{String, ToString};
 
