@@ -69,6 +69,13 @@ impl Default for StdioTerminal {
     }
 }
 
+// SAFETY: Windows console handles (HANDLE) are thread-safe.
+// The Windows Console API has internal locking and multiple threads
+// can safely use the same console handle. While HANDLE is a raw pointer
+// type (*mut c_void), the Windows console handles can be safely sent
+// between threads without violating Rust's memory safety guarantees.
+unsafe impl Send for StdioTerminal {}
+
 impl Terminal for StdioTerminal {
     fn read_byte(&mut self) -> crate::Result<u8> {
         // This method is not used on Windows - we use ReadConsoleInputW instead
