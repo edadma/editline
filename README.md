@@ -43,18 +43,18 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-editline = "0.0.21"
+editline = "0.0.22"
 
 # For embedded platforms
 [target.'cfg(target_os = "none")'.dependencies]
 # micro:bit v2 (nRF52833):
-editline = { version = "0.0.21", features = ["microbit"], default-features = false }
+editline = { version = "0.0.22", features = ["microbit"], default-features = false }
 # Raspberry Pi Pico (RP2040) with USB CDC:
-editline = { version = "0.0.21", features = ["rp_pico_usb"], default-features = false }
+editline = { version = "0.0.22", features = ["rp_pico_usb"], default-features = false }
 # Raspberry Pi Pico 2 (RP2350) with USB CDC:
-editline = { version = "0.0.21", features = ["rp_pico2_usb"], default-features = false }
+editline = { version = "0.0.22", features = ["rp_pico2_usb"], default-features = false }
 # STM32H753ZI with Embassy async USB CDC:
-editline = { version = "0.0.21", features = ["stm32h753zi"], default-features = false }
+editline = { version = "0.0.22", features = ["stm32h753zi"], default-features = false }
 ```
 
 ### Basic REPL Example
@@ -104,6 +104,49 @@ fn main() {
     }
 }
 ```
+
+### Async REPL with Real-Time Output
+
+For async environments where background tasks need to display output while the user is typing, use `read_line_with_async_output()`. This is perfect for REPLs with spawned tasks:
+
+```rust
+use editline::{AsyncLineEditor, terminals::EmbassyUsbTerminal};
+use embassy_sync::channel::Channel;
+use embassy_sync::blocking_mutex::raw::CriticalSectionRawMutex;
+
+// Shared channel for background tasks to send output
+static OUTPUT_CHANNEL: Channel<CriticalSectionRawMutex, heapless::Vec<u8, 256>, 4> = Channel::new();
+
+// In your REPL loop:
+let mut editor = AsyncLineEditor::new(256, 10);
+let mut terminal = EmbassyUsbTerminal::new(usb_class);
+
+loop {
+    terminal.write(b"> ").await?;
+    terminal.flush().await?;
+
+    // Async output from background tasks will interrupt and display immediately
+    match editor.read_line_with_async_output(&mut terminal, || async {
+        Some(OUTPUT_CHANNEL.receive().await)
+    }).await {
+        Ok(line) => {
+            // Process the line...
+        }
+        Err(e) => break,
+    }
+}
+```
+
+Background tasks can write to the channel:
+```rust
+// From a spawned task
+let output = b"Background task output\r\n";
+let mut buf = heapless::Vec::<u8, 256>::new();
+buf.extend_from_slice(output).ok();
+OUTPUT_CHANNEL.send(buf).await;
+```
+
+The output will appear immediately, interrupting the prompt. The current input line is automatically redrawn below the async output.
 
 ### Custom Terminal Implementation
 
@@ -194,7 +237,7 @@ Then use editline in your `Cargo.toml`:
 
 ```toml
 [dependencies]
-editline = { version = "0.0.21", default-features = false }
+editline = { version = "0.0.22", default-features = false }
 ```
 
 Try these features:

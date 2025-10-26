@@ -246,6 +246,101 @@ impl AsyncLineEditor {
         result
     }
 
+    /// Read a line with support for async output interrupts.
+    ///
+    /// This version allows background tasks to send output that will be displayed
+    /// immediately, even while the user is typing. This is useful for async REPLs
+    /// where spawned tasks need to display output.
+    ///
+    /// # Type Parameters
+    ///
+    /// * `T` - The async terminal type
+    /// * `F` - A future that yields `Option<Vec<u8>>` when output is available
+    ///
+    /// # Arguments
+    ///
+    /// * `terminal` - The async terminal to read from and write to
+    /// * `output_fut` - A future that receives async output. Should return `None` when no more output.
+    ///
+    /// # Returns
+    ///
+    /// `Ok(String)` with the trimmed entered line, or `Err` if an I/O error occurs.
+    #[cfg(feature = "stm32h753zi")]
+    pub async fn read_line_with_async_output<T, F, Fut>(
+        &mut self,
+        terminal: &mut T,
+        mut output_fut: F,
+    ) -> Result<String>
+    where
+        T: AsyncTerminal,
+        F: FnMut() -> Fut,
+        Fut: core::future::Future<Output = Option<heapless::Vec<u8, 256>>>,
+    {
+        use embassy_futures::select::{select, Either};
+        use core::pin::pin;
+
+        self.line.clear();
+        terminal.enter_raw_mode().await?;
+
+        // Use a closure to ensure we always exit raw mode, even on error
+        let result = async {
+            loop {
+                // Use a separate scope for select so the pinned futures are dropped
+                // before we try to use terminal again
+                let select_result = {
+                    let key_fut = pin!(terminal.parse_key_event());
+                    let out_fut = pin!(output_fut());
+                    select(key_fut, out_fut).await
+                };
+
+                match select_result {
+                    Either::First(event_result) => {
+                        let event = event_result?;
+
+                        if event == KeyEvent::Enter {
+                            break;
+                        }
+
+                        self.handle_key_event(terminal, event).await?;
+                    }
+                    Either::Second(Some(data)) => {
+                        // Async output arrived - display it immediately
+                        terminal.write(b"\r\n").await?;
+                        terminal.write(&data).await?;
+                        terminal.write(b"\r\n> ").await?;
+
+                        // Redraw current line
+                        terminal.write(self.line.as_str()?.as_bytes()).await?;
+                        terminal.flush().await?;
+                    }
+                    Either::Second(None) => {
+                        // Output future completed - shouldn't happen in normal operation
+                        continue;
+                    }
+                }
+            }
+
+            // Embedded serial terminals need \r\n
+            terminal.write(b"\r\n").await?;
+            terminal.flush().await?;
+
+            let result = self.line.as_str()?
+                .trim()
+                .to_string();
+
+            // Add to history (History::add will check if empty and skip duplicates)
+            self.history.add(&result);
+            self.history.reset_view();
+
+            Ok(result)
+        }.await;
+
+        // Always exit raw mode, even if an error occurred
+        let _ = terminal.exit_raw_mode().await;
+
+        result
+    }
+
     async fn handle_key_event<T: AsyncTerminal>(&mut self, terminal: &mut T, event: KeyEvent) -> Result<()> {
         match event {
             KeyEvent::Normal(c) => {
