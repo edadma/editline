@@ -121,6 +121,17 @@ pub trait AsyncTerminal {
     /// Should handle multi-byte sequences (like ANSI escape codes) and return a single
     /// [`KeyEvent`]. Called once per key press by [`AsyncLineEditor::read_line`].
     async fn parse_key_event(&mut self) -> Result<KeyEvent>;
+
+    /// Checks if the terminal is connected (DTR signal for USB CDC terminals).
+    ///
+    /// Returns `true` if the terminal is connected, `false` if disconnected.
+    /// The default implementation always returns `true` for terminals that don't
+    /// support connection detection.
+    ///
+    /// USB CDC terminals should override this to check the DTR (Data Terminal Ready) signal.
+    fn dtr(&self) -> bool {
+        true // Default: always connected
+    }
 }
 
 /// Asynchronous line editor interface with full editing and history support.
