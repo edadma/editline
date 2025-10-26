@@ -315,13 +315,30 @@ impl AsyncLineEditor {
                         self.handle_key_event(terminal, event).await?;
                     }
                     Either::Second(Some(data)) => {
-                        // Async output arrived - display it immediately
-                        terminal.write(b"\r\n").await?;
-                        terminal.write(&data).await?;
-                        terminal.write(b"\r\n> ").await?;
+                        // Async output arrived - clear current line, display output above, then redraw
 
-                        // Redraw current line
-                        terminal.write(self.line.as_str()?.as_bytes()).await?;
+                        // Move to start of line and clear to end (erases prompt + typed text)
+                        terminal.write(b"\r").await?;
+                        terminal.clear_eol().await?;
+
+                        // Print the async output
+                        terminal.write(&data).await?;
+                        terminal.write(b"\r\n").await?;
+
+                        // Redraw prompt
+                        terminal.write(b"> ").await?;
+
+                        // Redraw current line content
+                        let line_content = self.line.as_str()?.as_bytes();
+                        terminal.write(line_content).await?;
+
+                        // Move cursor back to correct position
+                        let cursor_pos = self.line.cursor_pos();
+                        let chars_after_cursor = line_content.len() - cursor_pos;
+                        for _ in 0..chars_after_cursor {
+                            terminal.cursor_left().await?;
+                        }
+
                         terminal.flush().await?;
                     }
                     Either::Second(None) => {
